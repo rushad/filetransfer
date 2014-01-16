@@ -1,0 +1,30 @@
+#include <iostream>
+#include <gtest/gtest.h>
+
+bool CheckOptions(int argc, char** argv)
+{
+  for (int i = 1; i < argc; ++i)
+  {
+    std::string opt(argv[i]);
+    if(opt == "--gtest")
+    {
+      std::cout << "Running tests..." << std::endl;
+      testing::InitGoogleTest(&argc, argv);
+      RUN_ALL_TESTS();
+      return false;
+    }
+  }
+
+  return true;
+}
+
+int main(int argc, char* argv[])
+{
+  setlocale(LC_ALL, "RUS");
+
+  if(!CheckOptions(argc, argv))
+  {
+    return -1;
+  }
+  return 0;
+}
