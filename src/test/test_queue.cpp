@@ -40,7 +40,16 @@ namespace FileTransfer
       static void* ThreadCancelWaitShouldCancelPop(void*);
       static void* ThreadPushShouldWaitWhenQueueIsOverflowed(void*);
       static void* ThreadCancelWaitShouldCancelPush(void*);
-      Queue* Q;
+    };
+
+    struct ThreadData
+    {
+      ThreadData(size_t maxSize = DefaultMaxQueueSize)
+        : Q(maxSize)
+        , Proof(0)
+      {
+      }
+      Queue Q;
       unsigned Proof;
     };
 
@@ -168,27 +177,24 @@ namespace FileTransfer
 
     void* TestQueue::ThreadCancelWaitShouldCancelPop(void* data)
     {
-      TestQueue* tq = static_cast<TestQueue*>(data);
-      tq->Q->Pop(1);
-      tq->Proof = 123;
+      ThreadData* td = static_cast<ThreadData*>(data);
+      td->Q.Pop(1);
+      td->Proof = 123;
       return 0;
     }
 
     TEST_F(TestQueue, CancelWaitShouldCancelPop)
     {
-      Q = new Queue;
-      Proof = 0;
+      ThreadData td;
 
       pthread_t id;
-      pthread_create(&id, 0, ThreadCancelWaitShouldCancelPop, this);
+      pthread_create(&id, 0, ThreadCancelWaitShouldCancelPop, &td);
       usleep(100);
 
-      Q->CancelWait();
+      td.Q.CancelWait();
       pthread_join(id, 0);
 
-      delete Q;
-
-      ASSERT_EQ(123, Proof);
+      ASSERT_EQ(123, td.Proof);
     }
 
     TEST_F(TestQueue, PushShouldIncreaseSize)
@@ -256,30 +262,27 @@ namespace FileTransfer
 
     void* TestQueue::ThreadCancelWaitShouldCancelPush(void* data)
     {
-      TestQueue* tq = static_cast<TestQueue*>(data);
-      tq->Q->Push(MakeChunk("123"));
-      tq->Proof = 321;
+      ThreadData* td = static_cast<ThreadData*>(data);
+      td->Q.Push(MakeChunk("123"));
+      td->Proof = 321;
       return 0;
     }
 
     TEST_F(TestQueue, CancelWaitShouldCancelPush)
     {
       const size_t maxSize(1000);
+      ThreadData td(maxSize);
 
-      Q = new Queue(maxSize);
-      Q->Push(MakeChunk(std::string(maxSize, '$')));
+      td.Q.Push(MakeChunk(std::string(maxSize, '$')));
 
-      Proof = 0;
       pthread_t id;
-      pthread_create(&id, 0, ThreadCancelWaitShouldCancelPush, this);
+      pthread_create(&id, 0, ThreadCancelWaitShouldCancelPush, &td);
       usleep(100);
 
-      Q->CancelWait();
+      td.Q.CancelWait();
       pthread_join(id, 0);
 
-      delete Q;
-
-      ASSERT_EQ(321, Proof);
+      ASSERT_EQ(321, td.Proof);
     }
   }
 }

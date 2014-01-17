@@ -1,12 +1,12 @@
 #include "downloader.h"
 
-#include <iostream> // ****
-#include <string> // ****
+#include <pthread.h>
 
 namespace FileTransfer
 {
   Downloader::Downloader(Source& src, Queue& q)
-    : Src(src)
+    : /*ThreadId(0)
+    , */Src(src)
     , Q(q)
   {
   }
@@ -14,13 +14,15 @@ namespace FileTransfer
   void Downloader::Start()
   {
     ThreadFunc(this);
-    //pthread_create(Perform, this);
+
+//    int r = pthread_create(Perform, this
   }
 
   void Downloader::Receive(const void *buffer, size_t size, size_t nmemb)
   {
-    // Q->AddChunk(...);
-    std::cout << std::string((char*)buffer, size * nmemb) << std::endl;
+    Queue::Chunk chunk(size * nmemb);
+    chunk.assign((char*)buffer, (char*)buffer + chunk.size());
+    Q.Push(chunk);
   }
 
   void* Downloader::ThreadFunc(void *data)

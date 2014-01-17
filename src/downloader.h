@@ -16,6 +16,7 @@ namespace FileTransfer
   private:
     static void* ThreadFunc(void *data);
 
+//    pthread_t ThreadId;
     Source& Src;
     Queue& Q;
   };

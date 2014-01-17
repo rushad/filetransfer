@@ -1,6 +1,6 @@
 #include "../downloader.h"
 
-//#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread/thread.hpp>
 
 #include <gtest/gtest.h>
@@ -11,6 +11,17 @@ namespace FileTransfer
   {
     class TestDownloader : public ::testing::Test
     {
+    protected:
+      static Queue::Chunk MakeChunk(const std::string& str)
+      {
+        Queue::Chunk chunk(str.size());
+        chunk.assign(str.data(), str.data() + str.size());
+        return chunk;
+      }
+      static void usleep(unsigned ms)
+      {
+        boost::this_thread::sleep_for(boost::chrono::milliseconds(ms));
+      }
     };
 
     class FakeSource: public Source
@@ -32,23 +43,33 @@ namespace FileTransfer
       const std::string Data;
       const unsigned Delay;
     };
-/*
-    TEST_F(TestDownloader, ReadShouldStartThread)
+
+    TEST_F(TestDownloader, DownloaderShouldStartThread)
     {
+      const std::string data(100, '$');
+      FakeSource src(data, 2);
       Queue q;
 
-      const std::string data(100, '@');
-      FakeSource src(data, 2);
-
       Downloader dl(src, q);
+
       dl.Start();
 
-      ASSERT_EQ(0, q.GetDataSize());
-
-        boost::this_thread::sleep_for(boost::chrono::milliseconds(5));
-
-      ASSERT_EQ(data, q.GetData());
+      ASSERT_EQ(0, q.Size());
     }
-*/
+
+    TEST_F(TestDownloader, DownloaderShouldPushDataToQueue)
+    {
+      const std::string data(100, '$');
+      FakeSource src(data, 2);
+      Queue q;
+
+      Downloader dl(src, q);
+
+      dl.Start();
+
+      usleep(10);
+
+      ASSERT_EQ(MakeChunk(data), q.Pop(100));
+    }
   }
 }

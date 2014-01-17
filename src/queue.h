@@ -3,7 +3,7 @@
 #include <boost/shared_array.hpp>
 #include <boost/thread/condition_variable.hpp>
 
-#include <deque>
+#include <queue>
 #include <memory>
 #include <vector>
 
@@ -24,13 +24,18 @@ namespace FileTransfer
     Chunk Pop(const size_t size);
 
   private:
+    typedef boost::lock_guard<boost::mutex> Lock;
+    typedef boost::unique_lock<boost::mutex> CondLock;
+
+    void WaitData(CondLock& lock);
+
     bool Cancel;
     const size_t MaxSize;
     size_t TheSize;
     size_t Offset;
-    std::deque<Chunk> Deque;
-    mutable boost::mutex LockDeque;
-    boost::condition_variable NewChunksArrived;
+    std::queue<Chunk> Container;
+    mutable boost::mutex LockQueue;
+    boost::condition_variable PushProcessed;
     boost::condition_variable PopProcessed;
   };
 }

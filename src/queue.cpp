@@ -16,56 +16,60 @@ namespace FileTransfer
 
   size_t Queue::Size() const
   {
-    boost::lock_guard<boost::mutex> locker(LockDeque);
+    Lock lock(LockQueue);
     return TheSize;
   }
 
   void Queue::CancelWait()
   {
     {
-      boost::lock_guard<boost::mutex> locker(LockDeque);
+      Lock lock(LockQueue);
       Cancel = true;
     }
-    NewChunksArrived.notify_one();
+    PushProcessed.notify_one();
     PopProcessed.notify_one();
   }
 
   void Queue::Push(const Chunk& chunk)
   {
     {
-      boost::unique_lock<boost::mutex> locker(LockDeque);
+      CondLock lock(LockQueue);
       if (MaxSize)
       {
-        Cancel = false;
         while (!Cancel && (TheSize >= MaxSize))
-          PopProcessed.wait(locker);
+          PopProcessed.wait(lock);
       }
-      Deque.push_back(chunk);
+      Container.push(chunk);
       TheSize += chunk.size();
     }
-    NewChunksArrived.notify_one();
+    PushProcessed.notify_one();
+  }
+
+  void Queue::WaitData(CondLock& lock)
+  {
+    if (Container.empty())
+    {
+      while (!Cancel && Container.empty())
+      {
+        PushProcessed.wait(lock);
+      }
+    }
   }
 
   Queue::Chunk Queue::Pop(const size_t size)
   {
     Chunk result;
 
-    boost::unique_lock<boost::mutex> locker(LockDeque);
+    CondLock lock(LockQueue);
 
-    if (Deque.empty())
-    {
-      Cancel = false;
-      while (!Cancel && Deque.empty())
-      {
-        NewChunksArrived.wait(locker);
-      }
-      if (Cancel)
-        return result;
-    }
+    WaitData(lock);
 
-    while (!Deque.empty() && (result.size() < size))
+    if (Cancel)
+      return result;
+
+    while (!Container.empty() && (result.size() < size))
     {
-      Chunk chunk = Deque.front();
+      Chunk chunk = Container.front();
 
       const size_t toCopy = std::min(size - result.size(), chunk.size() - Offset);
 
@@ -74,7 +78,7 @@ namespace FileTransfer
       Offset += toCopy;
       if(Offset == chunk.size())
       {
-        Deque.pop_front();
+        Container.pop();
         TheSize -= chunk.size();
         Offset = 0;
         PopProcessed.notify_one();
