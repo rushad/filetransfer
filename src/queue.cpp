@@ -3,29 +3,45 @@
 namespace FileTransfer
 {
   Queue::Queue(const size_t maxSize)
-    : Stop(false)
+    : Cancel(false)
     , MaxSize(maxSize)
-    , Size(0)
+    , TheSize(0)
     , Offset(0)
   {
   }
 
   Queue::~Queue()
   {
-    Cancel();
   }
 
-  void Queue::Cancel()
+  size_t Queue::Size() const
   {
-    Stop = true;
-    NewChunksArrived.notify_all();
+    boost::lock_guard<boost::mutex> locker(LockDeque);
+    return TheSize;
+  }
+
+  void Queue::CancelWait()
+  {
+    {
+      boost::lock_guard<boost::mutex> locker(LockDeque);
+      Cancel = true;
+    }
+    NewChunksArrived.notify_one();
+    PopProcessed.notify_one();
   }
 
   void Queue::Push(const Chunk& chunk)
   {
     {
       boost::unique_lock<boost::mutex> locker(LockDeque);
+      if (MaxSize)
+      {
+        Cancel = false;
+        while (!Cancel && (TheSize >= MaxSize))
+          PopProcessed.wait(locker);
+      }
       Deque.push_back(chunk);
+      TheSize += chunk.size();
     }
     NewChunksArrived.notify_one();
   }
@@ -34,14 +50,16 @@ namespace FileTransfer
   {
     Chunk result;
 
+    boost::unique_lock<boost::mutex> locker(LockDeque);
+
     if (Deque.empty())
     {
-      boost::unique_lock<boost::mutex> locker(LockDeque);
-      while (!Stop && Deque.empty())
+      Cancel = false;
+      while (!Cancel && Deque.empty())
       {
         NewChunksArrived.wait(locker);
       }
-      if (Stop)
+      if (Cancel)
         return result;
     }
 
@@ -57,9 +75,10 @@ namespace FileTransfer
       if(Offset == chunk.size())
       {
         Deque.pop_front();
+        TheSize -= chunk.size();
         Offset = 0;
+        PopProcessed.notify_one();
       }
-
     } 
 
     return result;

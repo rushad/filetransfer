@@ -18,17 +18,19 @@ namespace FileTransfer
     explicit Queue(const size_t maxSize = DefaultMaxQueueSize);
     ~Queue();
 
-    void Cancel();
+    size_t Size() const;
+    void CancelWait();
     void Push(const Chunk& buffer);
     Chunk Pop(const size_t size);
 
   private:
-    bool Stop;
+    bool Cancel;
     const size_t MaxSize;
-    size_t Size;
+    size_t TheSize;
     size_t Offset;
     std::deque<Chunk> Deque;
-    boost::mutex LockDeque;
+    mutable boost::mutex LockDeque;
     boost::condition_variable NewChunksArrived;
+    boost::condition_variable PopProcessed;
   };
 }

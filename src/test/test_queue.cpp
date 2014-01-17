@@ -37,8 +37,9 @@ namespace FileTransfer
         boost::this_thread::sleep_for(boost::chrono::milliseconds(ms));
       }
       static void* ThreadPopShouldWaitWhenQueueIsEmpty(void*);
-      static void* ThreadPopShouldNotBlockDestructor(void*);
-
+      static void* ThreadCancelWaitShouldCancelPop(void*);
+      static void* ThreadPushShouldWaitWhenQueueIsOverflowed(void*);
+      static void* ThreadCancelWaitShouldCancelPush(void*);
       Queue* Q;
       unsigned Proof;
     };
@@ -128,7 +129,7 @@ namespace FileTransfer
       ASSERT_EQ(MakeChunk(str1 + str2 + str3), MakeChunk(buf1, MakeChunk(buf2, buf3)));
     }
 
-    TEST_F(TestQueue, PopOverflow)
+    TEST_F(TestQueue, CheckPopOverflow)
     {
       const std::string str("aaaaaaaaaa");
 
@@ -165,28 +166,120 @@ namespace FileTransfer
       ASSERT_GE(t2, t1 + millisec(100));
     }
 
-    void* TestQueue::ThreadPopShouldNotBlockDestructor(void* data)
+    void* TestQueue::ThreadCancelWaitShouldCancelPop(void* data)
     {
       TestQueue* tq = static_cast<TestQueue*>(data);
       tq->Q->Pop(1);
-      std::cout << "qweeee" << std::endl;
       tq->Proof = 123;
       return 0;
     }
 
-    TEST_F(TestQueue, PopShouldNotBlockDesctructor)
+    TEST_F(TestQueue, CancelWaitShouldCancelPop)
     {
       Q = new Queue;
       Proof = 0;
-      pthread_t id;
-      pthread_create(&id, 0, ThreadPopShouldNotBlockDestructor, this);
 
+      pthread_t id;
+      pthread_create(&id, 0, ThreadCancelWaitShouldCancelPop, this);
       usleep(100);
-      Q->Cancel();
+
+      Q->CancelWait();
       pthread_join(id, 0);
+
       delete Q;
 
       ASSERT_EQ(123, Proof);
+    }
+
+    TEST_F(TestQueue, PushShouldIncreaseSize)
+    {
+      const std::string str("0123456789");
+
+      Queue q;
+      q.Push(MakeChunk(str));
+
+      ASSERT_EQ(str.size(), q.Size());
+    }
+
+    TEST_F(TestQueue, PopShouldNotDecreaseSizeWhenNoChunksWasPopped)
+    {
+      const std::string str("0123456789");
+
+      Queue q;
+      q.Push(MakeChunk(str));
+
+      Queue::Chunk buf = q.Pop(str.size() - 1);
+
+      ASSERT_EQ(str.size(), q.Size());
+    }
+
+    TEST_F(TestQueue, PopShouldDecreaseSizeWhenChunksWasPopped)
+    {
+      const std::string str("0123456789");
+
+      Queue q;
+      q.Push(MakeChunk(str));
+
+      Queue::Chunk buf = q.Pop(str.size());
+
+      ASSERT_EQ(0, q.Size());
+    }
+
+    void* TestQueue::ThreadPushShouldWaitWhenQueueIsOverflowed(void* data)
+    {
+      Queue* q = static_cast<Queue*>(data);
+      usleep(100);
+      q->Pop(10);
+      return 0;
+    }
+
+    TEST_F(TestQueue, PushShouldWaitWhenQueueIsOverflowed)
+    {
+      const std::string strChunk(10, '$');
+      const size_t maxSize = 1000;
+
+      Queue q(maxSize);
+      while (q.Size() < maxSize)
+        q.Push(MakeChunk(strChunk));
+
+      pthread_t id;
+      pthread_create(&id, 0, ThreadPushShouldWaitWhenQueueIsOverflowed, &q);
+
+      ptime t1(CurrentTime());
+      q.Push(MakeChunk(strChunk));
+      ptime t2(CurrentTime());
+
+      pthread_join(id, 0);
+
+      ASSERT_GT(t2, t1 + millisec(100));
+    }
+
+    void* TestQueue::ThreadCancelWaitShouldCancelPush(void* data)
+    {
+      TestQueue* tq = static_cast<TestQueue*>(data);
+      tq->Q->Push(MakeChunk("123"));
+      tq->Proof = 321;
+      return 0;
+    }
+
+    TEST_F(TestQueue, CancelWaitShouldCancelPush)
+    {
+      const size_t maxSize(1000);
+
+      Q = new Queue(maxSize);
+      Q->Push(MakeChunk(std::string(maxSize, '$')));
+
+      Proof = 0;
+      pthread_t id;
+      pthread_create(&id, 0, ThreadCancelWaitShouldCancelPush, this);
+      usleep(100);
+
+      Q->CancelWait();
+      pthread_join(id, 0);
+
+      delete Q;
+
+      ASSERT_EQ(321, Proof);
     }
   }
 }
