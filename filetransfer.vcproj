@@ -200,6 +200,14 @@
 				RelativePath=".\src\test\test_queue.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\src\test\test_uploader.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\uploader.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -224,6 +232,18 @@
 			</File>
 			<File
 				RelativePath=".\src\source.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\target.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\transmitter.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\uploader.h"
 				>
 			</File>
 		</Filter>

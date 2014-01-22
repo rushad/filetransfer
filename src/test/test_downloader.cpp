@@ -24,24 +24,30 @@ namespace FileTransfer
       }
     };
 
-    class FakeSource: public Source
+    class FakeSource : public Source
     {
     public:
-      FakeSource(const std::string& data, unsigned delay)
+      FakeSource(const std::string& data, unsigned delay, unsigned nloops = 1)
         : Data(data)
         , Delay(delay)
+        , NLoops(nloops)
       {
       }
 
-      void Run(Receiver& rv)
+      virtual bool Run(Receiver& rv)
       {
-        boost::this_thread::sleep_for(boost::chrono::milliseconds(Delay));
-        rv.Receive((void*)Data.data(), 1, Data.size());
+        for (unsigned i = 0; !rv.Cancelled() && (i < NLoops); ++i)
+        {
+          boost::this_thread::sleep_for(boost::chrono::milliseconds(Delay));
+          rv.Receive((void*)Data.data(), 1, Data.size());
+        }
+        return !rv.Cancelled();
       }
 
     private:
       const std::string Data;
       const unsigned Delay;
+      const unsigned NLoops;
     };
 
     TEST_F(TestDownloader, DownloaderShouldStartThread)
@@ -70,6 +76,23 @@ namespace FileTransfer
       usleep(10);
 
       ASSERT_EQ(MakeChunk(data), q.Pop(100));
+    }
+
+    TEST_F(TestDownloader, CancelShouldStopDownloader)
+    {
+      const std::string data(100, '$');
+      FakeSource src(data, 2, 100);
+      Queue q;
+
+      Downloader dl(src, q);
+
+      dl.Start();
+      usleep(2);
+      dl.Cancel();
+
+      usleep(10);
+
+      ASSERT_EQ(MakeChunk(data), q.Pop(1000));
     }
   }
 }

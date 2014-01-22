@@ -5,17 +5,54 @@
 namespace FileTransfer
 {
   Downloader::Downloader(Source& src, Queue& q)
-    : /*ThreadId(0)
-    , */Src(src)
+    : Src(src)
     , Q(q)
+    , Stop(false)
+    , Done(false)
+    , Result(false)
   {
+  }
+
+  Downloader::~Downloader()
+  {
+    pthread_join(ThreadId, 0);
   }
 
   void Downloader::Start()
   {
-    ThreadFunc(this);
+    int r = pthread_create(&ThreadId, 0, ThreadFunc, this);
+    switch(r)
+    {
+    case 0:
+      break;
+    case EAGAIN:
+      throw std::exception("Downloader::Start(): EAGAIN: Insufficient resources to create thread");
+    case EINVAL:
+      throw std::exception("Downloader::Start(): EINVAL: Invalid settings in attr");
+    case EPERM:
+      throw std::exception("Downloader::Start(): EINVAL: No permission to set the scheduling policy and parameters");
+    default:
+      throw std::exception("Downloader::Start(): Unknown error");
+    }
+  }
 
-//    int r = pthread_create(Perform, this
+  void Downloader::Cancel()
+  {
+    boost::lock_guard<boost::mutex> lock(LockStop);
+    Stop = true;
+  }
+
+  bool Downloader::Wait()
+  {
+    pthread_join(ThreadId, 0);
+    boost::lock_guard<boost::mutex> lock(LockDone);
+    return Result;
+  }
+
+  bool Downloader::Cancelled() const
+  {
+    boost::lock_guard<boost::mutex> lock(LockStop);
+    return Stop;
   }
 
   void Downloader::Receive(const void *buffer, size_t size, size_t nmemb)
@@ -28,7 +65,10 @@ namespace FileTransfer
   void* Downloader::ThreadFunc(void *data)
   {
     Downloader* dl = static_cast<Downloader*>(data);
-    dl->Src.Run(*dl);
+    bool res = dl->Src.Run(*dl);
+    boost::lock_guard<boost::mutex> lock(dl->LockDone);
+    dl->Done = true;
+    dl->Result = res;
     return 0;
   }
 }

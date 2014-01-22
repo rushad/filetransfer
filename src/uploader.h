@@ -1,36 +1,33 @@
 #pragma once
 
 #include "queue.h"
-#include "receiver.h"
-#include "source.h"
+#include "transmitter.h"
+#include "target.h"
 
 #include <pthread.h>
 
 namespace FileTransfer
 {
-  class Downloader : public Receiver
+  class Uploader : public Transmitter
   {
   public:
-    Downloader(Source& src, Queue& q);
-    ~Downloader();
+    Uploader(Target& trg, Queue& q, const boost::uint64_t length);
+    ~Uploader();
     void Start();
     void Cancel();
-    bool Wait();
-
-    virtual void Receive(const void *buffer, size_t size, size_t nmemb);
+    virtual size_t Transmit(void *buffer, size_t size, size_t nmemb);
     virtual bool Cancelled() const;
 
   private:
     static void* ThreadFunc(void *data);
 
     pthread_t ThreadId;
-    Source& Src;
+    Target& Trg;
     Queue& Q;
+    const boost::uint64_t Length;
+    boost::uint64_t Uploaded;
 
     mutable boost::mutex LockStop;
     bool Stop;
-    mutable boost::mutex LockDone;
-    bool Done;
-    bool Result;
   };
 }

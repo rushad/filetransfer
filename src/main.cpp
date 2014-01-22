@@ -1,5 +1,10 @@
-#include <iostream>
+#include "curl.h"
+#include "downloader.h"
+#include "queue.h"
+
 #include <gtest/gtest.h>
+
+#include <iostream>
 
 bool CheckOptions(int argc, char** argv)
 {
@@ -26,5 +31,15 @@ int main(int argc, char* argv[])
   {
     return -1;
   }
+
+  FileTransfer::CurlSource src("http://example.com");
+  FileTransfer::Queue q;
+
+  FileTransfer::Downloader dl(src, q);
+  dl.Start();
+
+  std::cout << dl.Wait() << std::endl;
+  std::cout << std::string((char*)&q.Pop(100000)[0], q.Size()) << std::endl;
+
   return 0;
 }
