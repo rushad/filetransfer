@@ -7,8 +7,8 @@ namespace FileTransfer
   Downloader::Downloader(Source& src, Queue& q)
     : Src(src)
     , Q(q)
+    , Downloaded(0)
     , Stop(false)
-    , Done(false)
     , Result(false)
   {
   }
@@ -45,7 +45,7 @@ namespace FileTransfer
   bool Downloader::Wait()
   {
     pthread_join(ThreadId, 0);
-    boost::lock_guard<boost::mutex> lock(LockDone);
+    boost::lock_guard<boost::mutex> lock(LockResult);
     return Result;
   }
 
@@ -60,14 +60,14 @@ namespace FileTransfer
     Queue::Chunk chunk(size * nmemb);
     chunk.assign((char*)buffer, (char*)buffer + chunk.size());
     Q.Push(chunk);
+    Downloaded += chunk.size();
   }
 
   void* Downloader::ThreadFunc(void *data)
   {
     Downloader* dl = static_cast<Downloader*>(data);
     bool res = dl->Src.Run(*dl);
-    boost::lock_guard<boost::mutex> lock(dl->LockDone);
-    dl->Done = true;
+    boost::lock_guard<boost::mutex> lock(dl->LockResult);
     dl->Result = res;
     return 0;
   }

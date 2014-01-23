@@ -6,7 +6,7 @@ namespace FileTransfer
   {
   public:
     virtual ~Receiver() {}
-    virtual void Receive(const void *buffer, size_t size, size_t nmemb) = 0;
     virtual bool Cancelled() const = 0;
+    virtual void Receive(const void *buffer, size_t size, size_t nmemb) = 0;
   };
 }

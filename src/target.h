@@ -8,7 +8,7 @@ namespace FileTransfer
   {
   public:
     virtual ~Target() {}
-    virtual void Run(Transmitter& tr) = 0;
+    virtual bool Run(Transmitter& tr) = 0;
   };
 
 }

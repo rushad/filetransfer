@@ -44,6 +44,11 @@ namespace FileTransfer
         return !rv.Cancelled();
       }
 
+      virtual boost::uint64_t GetSize()
+      {
+        return Data.size() * NLoops;
+      }
+
     private:
       const std::string Data;
       const unsigned Delay;
@@ -93,6 +98,14 @@ namespace FileTransfer
       usleep(10);
 
       ASSERT_EQ(MakeChunk(data), q.Pop(1000));
+    }
+
+    TEST_F(TestDownloader, CheckSourceGetSize)
+    {
+      const std::string data(100, '$');
+      FakeSource src(data, 2, 100);
+
+      ASSERT_EQ(100*100, src.GetSize());
     }
   }
 }

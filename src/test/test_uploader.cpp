@@ -28,12 +28,13 @@ namespace FileTransfer
       {
       }
 
-      virtual void Run(Transmitter& tr)
+      virtual bool Run(Transmitter& tr)
       {
         char buffer[100];
         size_t size;
         while (!tr.Cancelled() && (size = tr.Transmit(buffer, sizeof(buffer), 1)))
           Data += std::string(buffer, size);
+        return !tr.Cancelled();
       }
 
       std::string GetData() const

@@ -15,9 +15,11 @@ namespace FileTransfer
   public:
     CurlSource(const std::string& url);
     virtual bool Run(Receiver& wr);
+    virtual boost::uint64_t GetSize();
 
   private:
     static size_t WriteFunc(void* buffer, size_t size, size_t nmemb, void* data);
+    static size_t WriteFuncHEAD(void* buffer, size_t size, size_t nmemb, void* data);
 
     std::string Url;
     CURL* Curl;
@@ -26,11 +28,13 @@ namespace FileTransfer
   class CurlTarget : public Target
   {
   public:
-    virtual void Run(Transmitter& tr);
+    CurlTarget(const std::string& url);
+    virtual bool Run(Transmitter& tr);
 
   private:
     static size_t ReadFunc(void* buffer, size_t size, size_t nmemb, void* data);
 
+    std::string Url;
     CURL* Curl;
   };
 

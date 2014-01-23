@@ -15,8 +15,10 @@ namespace FileTransfer
     ~Uploader();
     void Start();
     void Cancel();
-    virtual size_t Transmit(void *buffer, size_t size, size_t nmemb);
+    bool Wait();
+
     virtual bool Cancelled() const;
+    virtual size_t Transmit(void *buffer, size_t size, size_t nmemb);
 
   private:
     static void* ThreadFunc(void *data);
@@ -29,5 +31,7 @@ namespace FileTransfer
 
     mutable boost::mutex LockStop;
     bool Stop;
+    mutable boost::mutex LockResult;
+    bool Result;
   };
 }

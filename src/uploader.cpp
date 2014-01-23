@@ -10,6 +10,7 @@ namespace FileTransfer
     , Length(length)
     , Uploaded(0)
     , Stop(false)
+    , Result(false)
   {
   }
 
@@ -43,6 +44,13 @@ namespace FileTransfer
     Q.CancelWait();
   }
 
+  bool Uploader::Wait()
+  {
+    pthread_join(ThreadId, 0);
+    boost::lock_guard<boost::mutex> lock(LockResult);
+    return Result;
+  }
+
   bool Uploader::Cancelled() const
   {
     boost::lock_guard<boost::mutex> lock(LockStop);
@@ -60,13 +68,16 @@ namespace FileTransfer
       memcpy(buffer, &chunk[0], chunk.size());
 
     Uploaded += chunk.size();
+
     return chunk.size();
   }
 
   void* Uploader::ThreadFunc(void *data)
   {
     Uploader* ul = static_cast<Uploader*>(data);
-    ul->Trg.Run(*ul);
+    bool res = ul->Trg.Run(*ul);
+    boost::lock_guard<boost::mutex> lock(ul->LockResult);
+    ul->Result = res;
     return 0;
   }
 }

@@ -17,8 +17,8 @@ namespace FileTransfer
     void Cancel();
     bool Wait();
 
-    virtual void Receive(const void *buffer, size_t size, size_t nmemb);
     virtual bool Cancelled() const;
+    virtual void Receive(const void *buffer, size_t size, size_t nmemb);
 
   private:
     static void* ThreadFunc(void *data);
@@ -26,11 +26,11 @@ namespace FileTransfer
     pthread_t ThreadId;
     Source& Src;
     Queue& Q;
+    boost::uint64_t Downloaded;
 
     mutable boost::mutex LockStop;
     bool Stop;
-    mutable boost::mutex LockDone;
-    bool Done;
+    mutable boost::mutex LockResult;
     bool Result;
   };
 }
