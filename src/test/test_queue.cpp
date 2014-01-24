@@ -22,20 +22,24 @@ namespace FileTransfer
         chunk.assign(str.data(), str.data() + str.size());
         return chunk;
       }
+
       static Queue::Chunk MakeChunk(const Queue::Chunk& chunk1, const Queue::Chunk& chunk2)
       {
         Queue::Chunk chunk(chunk1);
         chunk.insert(chunk.end(), chunk2.begin(), chunk2.end());
         return chunk;
       }
+
       static ptime CurrentTime()
       {
         return boost::posix_time::microsec_clock::universal_time();
       }
+
       static void usleep(unsigned ms)
       {
         boost::this_thread::sleep_for(boost::chrono::milliseconds(ms));
       }
+
       static void* ThreadPopShouldWaitWhenQueueIsEmpty(void*);
       static void* ThreadCancelWaitShouldCancelPop(void*);
       static void* ThreadPushShouldWaitWhenQueueIsOverflowed(void*);
@@ -191,7 +195,7 @@ namespace FileTransfer
       pthread_create(&id, 0, ThreadCancelWaitShouldCancelPop, &td);
       usleep(100);
 
-      td.Q.CancelWait();
+      td.Q.Cancel();
       pthread_join(id, 0);
 
       ASSERT_EQ(123, td.Proof);
@@ -279,7 +283,7 @@ namespace FileTransfer
       pthread_create(&id, 0, ThreadCancelWaitShouldCancelPush, &td);
       usleep(100);
 
-      td.Q.CancelWait();
+      td.Q.Cancel();
       pthread_join(id, 0);
 
       ASSERT_EQ(321, td.Proof);

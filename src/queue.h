@@ -19,7 +19,7 @@ namespace FileTransfer
     ~Queue();
 
     size_t Size() const;
-    void CancelWait();
+    void Cancel();
     void Push(const Chunk& buffer);
     Chunk Pop(const size_t size);
 
@@ -29,7 +29,7 @@ namespace FileTransfer
 
     void WaitData(CondLock& lock);
 
-    bool Cancel;
+    bool Stop;
     const size_t MaxSize;
     size_t TheSize;
     size_t Offset;

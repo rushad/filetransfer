@@ -5,7 +5,8 @@
 namespace FileTransfer
 {
   Uploader::Uploader(Target& trg, Queue& q, const boost::uint64_t length)
-    : Trg(trg)
+    : ThreadId(pthread_self())
+    , Trg(trg)
     , Q(q)
     , Length(length)
     , Uploaded(0)
@@ -16,7 +17,8 @@ namespace FileTransfer
 
   Uploader::~Uploader()
   {
-    pthread_join(ThreadId, 0);
+    if (!pthread_equal(ThreadId, pthread_self()))
+      pthread_join(ThreadId, 0);
   }
 
   void Uploader::Start()
@@ -41,7 +43,7 @@ namespace FileTransfer
   {
     boost::lock_guard<boost::mutex> lock(LockStop);
     Stop = true;
-    Q.CancelWait();
+    Q.Cancel();
   }
 
   bool Uploader::Wait()

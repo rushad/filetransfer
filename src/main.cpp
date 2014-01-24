@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
 
   curl_global_init(CURL_GLOBAL_ALL);
 
-  FileTransfer::CurlSource src("https://root:qwe123QWE@10.27.11.125/folder/plaz_win2k3/plaz_win2k3_1-flat.vmdk?dcPath=ha%2ddatacenter&dsName=datastore1");
+  FileTransfer::CurlSource src("https://root:qwe123QWE@10.27.11.125/folder/test1/nz_freedos_1-flat.vmdk?dcPath=ha%2ddatacenter&dsName=datastore1");
   FileTransfer::CurlTarget trg("https://root:qwe123QWE@10.27.11.125/folder/test1/test.dat?dcPath=ha-datacenter&dsName=datastore1");
 
   FileTransfer::Queue q;
@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
   dl.Start();
   ul.Start();
 
-/*  Sleep(3000);
+/*  Sleep(20000);
 
   dl.Cancel();
   ul.Cancel();*/

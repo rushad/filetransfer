@@ -5,7 +5,8 @@
 namespace FileTransfer
 {
   Downloader::Downloader(Source& src, Queue& q)
-    : Src(src)
+    : ThreadId(pthread_self())
+    , Src(src)
     , Q(q)
     , Downloaded(0)
     , Stop(false)
@@ -15,7 +16,8 @@ namespace FileTransfer
 
   Downloader::~Downloader()
   {
-    pthread_join(ThreadId, 0);
+    if (!pthread_equal(ThreadId, pthread_self()))
+      pthread_join(ThreadId, 0);
   }
 
   void Downloader::Start()

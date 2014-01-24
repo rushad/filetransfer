@@ -9,6 +9,8 @@ namespace FileTransfer
 {
   namespace Test
   {
+    using boost::posix_time::ptime;
+    using boost::posix_time::millisec;
     class TestDownloader : public ::testing::Test
     {
     protected:
@@ -18,9 +20,15 @@ namespace FileTransfer
         chunk.assign(str.data(), str.data() + str.size());
         return chunk;
       }
+
       static void usleep(unsigned ms)
       {
         boost::this_thread::sleep_for(boost::chrono::milliseconds(ms));
+      }
+
+      static ptime CurrentTime()
+      {
+        return boost::posix_time::microsec_clock::universal_time();
       }
     };
 
@@ -106,6 +114,49 @@ namespace FileTransfer
       FakeSource src(data, 2, 100);
 
       ASSERT_EQ(100*100, src.GetSize());
+    }
+
+    TEST_F(TestDownloader, WaitShouldWait)
+    {
+      const std::string data(100, '$');
+      FakeSource src(data, 2, 100);
+      Queue q;
+
+      Downloader dl(src, q);
+
+      ptime t1(CurrentTime());
+      dl.Start();
+      dl.Wait();
+      ptime t2(CurrentTime());
+
+      ASSERT_GE(t2, t1 + millisec(2 * 100) );
+    }
+
+    TEST_F(TestDownloader, WaitShouldReturnTrueOnSuccess)
+    {
+      const std::string data(100, '$');
+      FakeSource src(data, 2, 100);
+      Queue q;
+
+      Downloader dl(src, q);
+
+      ptime t1(CurrentTime());
+      dl.Start();
+      ASSERT_TRUE(dl.Wait());
+    }
+
+    TEST_F(TestDownloader, WaitShouldReturnFalseWhenCancelled)
+    {
+      const std::string data(100, '$');
+      FakeSource src(data, 2, 100);
+      Queue q;
+
+      Downloader dl(src, q);
+
+      ptime t1(CurrentTime());
+//      dl.Start();
+      dl.Cancel();
+      ASSERT_FALSE(dl.Wait());
     }
   }
 }

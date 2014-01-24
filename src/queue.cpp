@@ -3,7 +3,7 @@
 namespace FileTransfer
 {
   Queue::Queue(const size_t maxSize)
-    : Cancel(false)
+    : Stop(false)
     , MaxSize(maxSize)
     , TheSize(0)
     , Offset(0)
@@ -20,11 +20,11 @@ namespace FileTransfer
     return TheSize;
   }
 
-  void Queue::CancelWait()
+  void Queue::Cancel()
   {
     {
       Lock lock(LockQueue);
-      Cancel = true;
+      Stop = true;
     }
     PushProcessed.notify_one();
     PopProcessed.notify_one();
@@ -36,7 +36,7 @@ namespace FileTransfer
       CondLock lock(LockQueue);
       if (MaxSize)
       {
-        while (!Cancel && (TheSize >= MaxSize))
+        while (!Stop && (TheSize >= MaxSize))
           PopProcessed.wait(lock);
       }
       Container.push(chunk);
@@ -49,7 +49,7 @@ namespace FileTransfer
   {
     if (Container.empty())
     {
-      while (!Cancel && Container.empty())
+      while (!Stop && Container.empty())
       {
         PushProcessed.wait(lock);
       }
@@ -64,7 +64,7 @@ namespace FileTransfer
 
     WaitData(lock);
 
-    if (Cancel)
+    if (Stop)
       return result;
 
     while (!Container.empty() && (result.size() < size))
