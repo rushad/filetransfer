@@ -12,6 +12,7 @@ namespace FileTransfer
     , Uploaded(0)
     , Stop(false)
     , Result(false)
+    , Done(false)
   {
   }
 
@@ -46,11 +47,36 @@ namespace FileTransfer
     Q.Cancel();
   }
 
-  bool Uploader::Wait()
+  State Uploader::Wait(const unsigned ms)
   {
-    pthread_join(ThreadId, 0);
-    boost::lock_guard<boost::mutex> lock(LockResult);
-    return Result;
+    boost::unique_lock<boost::mutex> lock(LockResult);
+
+    typedef boost::chrono::system_clock time;
+    time::time_point te = time::now() + boost::chrono::milliseconds(ms);
+
+    while (!Done)
+    {
+      if (CondDone.wait_for(lock,  te - time::now()) == boost::cv_status::timeout)
+      {
+        return STATE_TIMEOUT;
+      }
+    }
+
+    if (Cancelled())
+    {
+      return STATE_CANCELLED;
+    }
+    else if (Result)
+    {
+      return STATE_SUCCESS;
+    }
+
+    return STATE_ERROR;
+  }
+
+  std::string Uploader::Error() const
+  {
+    return SrcError;
   }
 
   bool Uploader::Cancelled() const
@@ -77,9 +103,15 @@ namespace FileTransfer
   void* Uploader::ThreadFunc(void *data)
   {
     Uploader* ul = static_cast<Uploader*>(data);
-    bool res = ul->Trg.Run(*ul);
+
+    bool res = ul->Trg.Run(*ul, ul->SrcError);
+
     boost::lock_guard<boost::mutex> lock(ul->LockResult);
     ul->Result = res;
+    ul->Done = true;
+    
+    ul->CondDone.notify_one();
+
     return 0;
   }
 }

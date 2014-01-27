@@ -1,7 +1,4 @@
-#include "curl.h"
-#include "downloader.h"
-#include "queue.h"
-#include "uploader.h"
+#include "filetransfer.h"
 
 #include <gtest/gtest.h>
 
@@ -35,32 +32,11 @@ int main(int argc, char* argv[])
 
   curl_global_init(CURL_GLOBAL_ALL);
 
-  FileTransfer::CurlSource src("https://root:qwe123QWE@10.27.11.125/folder/test1/nz_freedos_1-flat.vmdk?dcPath=ha%2ddatacenter&dsName=datastore1");
-  FileTransfer::CurlTarget trg("https://root:qwe123QWE@10.27.11.125/folder/test1/test.dat?dcPath=ha-datacenter&dsName=datastore1");
+  FileTransfer::FileTransfer ft(
+    "https://root:qwe123QWE@10.27.11.125/folder/test1/nz_freedos_1-flat.vmdk?dcPath=ha%2ddatacenter&dsName=datastore1",
+    "https://root:qwe123QWE@10.27.11.125/folder/test1/test.dat?dcPath=ha-datacenter&dsName=datastore1");
 
-  FileTransfer::Queue q;
-
-  FileTransfer::Downloader dl(src, q);
-  FileTransfer::Uploader ul(trg, q, src.GetSize());
-
-  dl.Start();
-  ul.Start();
-
-/*  Sleep(20000);
-
-  dl.Cancel();
-  ul.Cancel();*/
-
-  bool dlRes = dl.Wait();
-  bool ulRes = false;
-  if (!dlRes)
-    ul.Cancel();
-  else
-    ulRes = ul.Wait();
-  std::cout << dlRes << " : " << ulRes << std::endl;
-//  std::cout << ul.Wait() << std::endl;
-/*  FileTransfer::Queue::Chunk chunk = q.Pop(100000);
-  std::cout << std::string((char*)&chunk[0], chunk.size()) << std::endl;*/
+  ft.Transfer();
 
   curl_global_cleanup();
 

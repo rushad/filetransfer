@@ -11,6 +11,7 @@ namespace FileTransfer
     , Downloaded(0)
     , Stop(false)
     , Result(false)
+    , Done(false)
   {
   }
 
@@ -44,11 +45,36 @@ namespace FileTransfer
     Stop = true;
   }
 
-  bool Downloader::Wait()
+  State Downloader::Wait(const unsigned ms)
   {
-    pthread_join(ThreadId, 0);
-    boost::lock_guard<boost::mutex> lock(LockResult);
-    return Result;
+    boost::unique_lock<boost::mutex> lock(LockResult);
+
+    typedef boost::chrono::system_clock time;
+    time::time_point te = time::now() + boost::chrono::milliseconds(ms);
+
+    while (!Done)
+    {
+      if (CondDone.wait_for(lock,  te - time::now()) == boost::cv_status::timeout)
+      {
+        return STATE_TIMEOUT;
+      }
+    }
+
+    if (Cancelled())
+    {
+      return STATE_CANCELLED;
+    }
+    else if (Result)
+    {
+      return STATE_SUCCESS;
+    }
+
+    return STATE_ERROR;
+  }
+
+  std::string Downloader::Error() const
+  {
+    return SrcError;
   }
 
   bool Downloader::Cancelled() const
@@ -68,9 +94,15 @@ namespace FileTransfer
   void* Downloader::ThreadFunc(void *data)
   {
     Downloader* dl = static_cast<Downloader*>(data);
-    bool res = dl->Src.Run(*dl);
+
+    bool res = dl->Src.Run(*dl, dl->SrcError);
+
     boost::lock_guard<boost::mutex> lock(dl->LockResult);
     dl->Result = res;
+    dl->Done = true;
+
+    dl->CondDone.notify_one();
+
     return 0;
   }
 }

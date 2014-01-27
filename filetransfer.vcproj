@@ -185,6 +185,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\filetransfer.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\src\main.cpp"
 				>
 			</File>
@@ -220,6 +224,10 @@
 			</File>
 			<File
 				RelativePath=".\src\downloader.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\filetransfer.h"
 				>
 			</File>
 			<File

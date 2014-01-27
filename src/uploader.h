@@ -15,7 +15,8 @@ namespace FileTransfer
     ~Uploader();
     void Start();
     void Cancel();
-    bool Wait();
+    State Wait(const unsigned ms = UINT_MAX);
+    std::string Error() const;
 
     virtual bool Cancelled() const;
     virtual size_t Transmit(void *buffer, size_t size, size_t nmemb);
@@ -31,7 +32,12 @@ namespace FileTransfer
 
     mutable boost::mutex LockStop;
     bool Stop;
+
     mutable boost::mutex LockResult;
     bool Result;
+    bool Done;
+    boost::condition_variable CondDone;
+
+    std::string SrcError;
   };
 }

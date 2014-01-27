@@ -14,6 +14,13 @@ namespace FileTransfer
     class TestDownloader : public ::testing::Test
     {
     protected:
+      TestDownloader()
+        : CS(100)
+        , MS(2)
+        , NL(10)
+      {
+      }
+
       static Queue::Chunk MakeChunk(const std::string& str)
       {
         Queue::Chunk chunk(str.size());
@@ -30,26 +37,32 @@ namespace FileTransfer
       {
         return boost::posix_time::microsec_clock::universal_time();
       }
+
+      const size_t CS;
+      const unsigned MS;
+      const unsigned NL;
     };
 
     class FakeSource : public Source
     {
     public:
-      FakeSource(const std::string& data, unsigned delay, unsigned nloops = 1)
+      FakeSource(const std::string& data, unsigned delay, unsigned nloops = 1, bool error = false)
         : Data(data)
         , Delay(delay)
         , NLoops(nloops)
+        , Error(error)
       {
       }
 
-      virtual bool Run(Receiver& rv)
+      virtual bool Run(Receiver& rv, std::string& strError)
       {
         for (unsigned i = 0; !rv.Cancelled() && (i < NLoops); ++i)
         {
           boost::this_thread::sleep_for(boost::chrono::milliseconds(Delay));
           rv.Receive((void*)Data.data(), 1, Data.size());
         }
-        return !rv.Cancelled();
+        strError = (Error ? "ERROR" : "OK");
+        return !Error;
       }
 
       virtual boost::uint64_t GetSize()
@@ -61,12 +74,13 @@ namespace FileTransfer
       const std::string Data;
       const unsigned Delay;
       const unsigned NLoops;
+      const bool Error;
     };
 
     TEST_F(TestDownloader, DownloaderShouldStartThread)
     {
-      const std::string data(100, '$');
-      FakeSource src(data, 2);
+      const std::string data(CS, '$');
+      FakeSource src(data, MS);
       Queue q;
 
       Downloader dl(src, q);
@@ -78,48 +92,45 @@ namespace FileTransfer
 
     TEST_F(TestDownloader, DownloaderShouldPushDataToQueue)
     {
-      const std::string data(100, '$');
-      FakeSource src(data, 2);
+      const std::string data(CS, '$');
+      FakeSource src(data, MS);
       Queue q;
 
       Downloader dl(src, q);
 
       dl.Start();
+      dl.Wait();
 
-      usleep(10);
-
-      ASSERT_EQ(MakeChunk(data), q.Pop(100));
+      ASSERT_EQ(MakeChunk(data), q.Pop(CS));
     }
 
     TEST_F(TestDownloader, CancelShouldStopDownloader)
     {
-      const std::string data(100, '$');
-      FakeSource src(data, 2, 100);
+      const std::string data(CS, '$');
+      FakeSource src(data, MS, NL);
       Queue q;
 
       Downloader dl(src, q);
 
       dl.Start();
-      usleep(2);
+      usleep(MS);
       dl.Cancel();
 
-      usleep(10);
-
-      ASSERT_EQ(MakeChunk(data), q.Pop(1000));
+      ASSERT_EQ(MakeChunk(data), q.Pop(CS * NL));
     }
 
     TEST_F(TestDownloader, CheckSourceGetSize)
     {
-      const std::string data(100, '$');
-      FakeSource src(data, 2, 100);
+      const std::string data(CS, '$');
+      FakeSource src(data, MS, NL);
 
-      ASSERT_EQ(100*100, src.GetSize());
+      ASSERT_EQ(CS*NL, src.GetSize());
     }
 
     TEST_F(TestDownloader, WaitShouldWait)
     {
-      const std::string data(100, '$');
-      FakeSource src(data, 2, 100);
+      const std::string data(CS, '$');
+      FakeSource src(data, MS, NL);
       Queue q;
 
       Downloader dl(src, q);
@@ -129,34 +140,89 @@ namespace FileTransfer
       dl.Wait();
       ptime t2(CurrentTime());
 
-      ASSERT_GE(t2, t1 + millisec(2 * 100) );
+      ASSERT_GE(t2, t1 + millisec(MS * NL) );
     }
 
-    TEST_F(TestDownloader, WaitShouldReturnTrueOnSuccess)
+    TEST_F(TestDownloader, WaitShouldReturnSuccessOnSuccess)
     {
-      const std::string data(100, '$');
-      FakeSource src(data, 2, 100);
+      const std::string data(CS, '$');
+      FakeSource src(data, MS, NL);
+      Queue q;
+
+      Downloader dl(src, q);
+
+      dl.Start();
+      ASSERT_EQ(STATE_SUCCESS, dl.Wait());
+    }
+
+    TEST_F(TestDownloader, WaitShouldReturnCancelledWhenCancelled)
+    {
+      const std::string data(CS, '$');
+      FakeSource src(data, MS, NL);
+      Queue q;
+
+      Downloader dl(src, q);
+
+      dl.Start();
+      dl.Cancel();
+
+      ASSERT_EQ(STATE_CANCELLED, dl.Wait());
+    }
+
+    TEST_F(TestDownloader, WaitShouldReturnTimeoutOnTimeout)
+    {
+      const std::string data(CS, '$');
+      FakeSource src(data, MS, NL);
+      Queue q;
+
+      Downloader dl(src, q);
+
+      dl.Start();
+
+      ASSERT_EQ(STATE_TIMEOUT, dl.Wait(MS * NL / 2));
+    }
+
+    TEST_F(TestDownloader, WaitShouldReturnErrorOnError)
+    {
+      const std::string data(CS, '$');
+      FakeSource src(data, MS, NL, true);
+      Queue q;
+
+      Downloader dl(src, q);
+
+      dl.Start();
+
+      ASSERT_EQ(STATE_ERROR, dl.Wait());
+    }
+
+    TEST_F(TestDownloader, WaitShouldExitOnTimeout)
+    {
+      const std::string data(CS, '$');
+      FakeSource src(data, MS, NL);
       Queue q;
 
       Downloader dl(src, q);
 
       ptime t1(CurrentTime());
       dl.Start();
-      ASSERT_TRUE(dl.Wait());
+      dl.Wait(MS * NL / 2);
+      ptime t2(CurrentTime());
+
+      ASSERT_LT(t2, t1 + millisec(MS * NL));
     }
 
-    TEST_F(TestDownloader, WaitShouldReturnFalseWhenCancelled)
+    TEST_F(TestDownloader, ErrorShouldReturnSourceError)
     {
-      const std::string data(100, '$');
-      FakeSource src(data, 2, 100);
+      const std::string data(CS, '$');
+      FakeSource src(data, MS, NL, true);
       Queue q;
 
       Downloader dl(src, q);
 
-      ptime t1(CurrentTime());
-//      dl.Start();
-      dl.Cancel();
-      ASSERT_FALSE(dl.Wait());
+      dl.Start();
+      dl.Wait();
+
+      ASSERT_EQ("ERROR", dl.Error());
     }
   }
 }

@@ -7,7 +7,7 @@ namespace FileTransfer
   {
   }
 
-  bool CurlSource::Run(Receiver& rv)
+  bool CurlSource::Run(Receiver& rv, std::string& strError)
   {
     Curl = curl_easy_init();
 
@@ -19,6 +19,8 @@ namespace FileTransfer
     curl_easy_setopt(Curl, CURLOPT_WRITEDATA, &rv);
 
     CURLcode res = curl_easy_perform(Curl);
+
+    strError = curl_easy_strerror(res);
 
     curl_easy_cleanup(Curl);
 
@@ -72,7 +74,7 @@ namespace FileTransfer
   {
   }
 
-  bool CurlTarget::Run(Transmitter& tr)
+  bool CurlTarget::Run(Transmitter& tr, std::string& strError)
   {
     Curl = curl_easy_init();
 
@@ -85,6 +87,8 @@ namespace FileTransfer
     curl_easy_setopt(Curl, CURLOPT_READDATA, &tr);
 
     CURLcode res = curl_easy_perform(Curl);
+
+    strError = curl_easy_strerror(res);
 
     curl_easy_cleanup(Curl);
 

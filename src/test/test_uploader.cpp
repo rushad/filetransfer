@@ -1,3 +1,5 @@
+#include "../downloader.h"
+#include "../source.h"
 #include "../uploader.h"
 
 #include <gtest/gtest.h>
@@ -6,35 +8,92 @@ namespace FileTransfer
 {
   namespace Test
   {
+    using boost::posix_time::ptime;
+    using boost::posix_time::millisec;
     class TestUploader : public ::testing::Test
     {
     protected:
+      TestUploader()
+        : CS(100)
+        , MS(2)
+        , NL(10)
+      {
+      }
+
       static Queue::Chunk MakeChunk(const std::string& str)
       {
         Queue::Chunk chunk(str.size());
         chunk.assign(str.data(), str.data() + str.size());
         return chunk;
       }
+
       static void usleep(unsigned ms)
       {
         boost::this_thread::sleep_for(boost::chrono::milliseconds(ms));
       }
+
+      static ptime CurrentTime()
+      {
+        return boost::posix_time::microsec_clock::universal_time();
+      }
+
+      const size_t CS;
+      const unsigned MS;
+      const unsigned NL;
+    };
+
+    class FakeSource : public Source
+    {
+    public:
+      FakeSource(const std::string& data, unsigned delay, unsigned nloops = 1, bool error = false)
+        : Data(data)
+        , Delay(delay)
+        , NLoops(nloops)
+        , Error(error)
+      {
+      }
+
+      virtual bool Run(Receiver& rv, std::string& strError)
+      {
+        for (unsigned i = 0; !rv.Cancelled() && (i < NLoops); ++i)
+        {
+          boost::this_thread::sleep_for(boost::chrono::milliseconds(Delay));
+          rv.Receive((void*)Data.data(), 1, Data.size());
+        }
+        strError = (Error ? "ERROR" : "OK");
+        return !Error;
+      }
+
+      virtual boost::uint64_t GetSize()
+      {
+        return Data.size() * NLoops;
+      }
+
+    private:
+      const std::string Data;
+      const unsigned Delay;
+      const unsigned NLoops;
+      const bool Error;
     };
 
     class FakeTarget : public Target
     {
     public:
-      FakeTarget()
+      FakeTarget(bool error = false)
+        : Error(error)
       {
       }
 
-      virtual bool Run(Transmitter& tr)
+      virtual bool Run(Transmitter& tr, std::string& strError)
       {
         char buffer[100];
         size_t size;
         while (!tr.Cancelled() && (size = tr.Transmit(buffer, sizeof(buffer), 1)))
           Data += std::string(buffer, size);
-        return !tr.Cancelled();
+        
+        strError = (Error ? "ERROR" : "OK");
+
+        return !Error;
       }
 
       std::string GetData() const
@@ -43,15 +102,16 @@ namespace FileTransfer
       }
 
     private:
+      const bool Error;
       std::string Data;
     };
 
     TEST_F(TestUploader, UploaderShouldStartThread)
     {
-      const std::string data(100, '$');
+      const std::string data(CS, '$');
       FakeTarget trg;
-
       Queue q;
+
       q.Push(MakeChunk(data));
 
       Uploader ul(trg, q, data.size());
@@ -62,57 +122,177 @@ namespace FileTransfer
 
     TEST_F(TestUploader, UploaderShouldPopDataFromQueue)
     {
-      const std::string data(100, '$');
+      const std::string data(CS, '$');
       FakeTarget trg;
-
       Queue q;
+
       q.Push(MakeChunk(data));
 
       Uploader ul(trg, q, data.size());
       ul.Start();
-      usleep(2);
+      ul.Wait();
 
       ASSERT_EQ(data, trg.GetData());
     }
 
     TEST_F(TestUploader, UploaderShouldStopWhenDone)
     {
-      const std::string data(100, '$');
+      const std::string data(CS, '$');
       FakeTarget trg;
-
       Queue q;
 
       Uploader ul(trg, q, data.size());
       ul.Start();
 
       q.Push(MakeChunk(data));
-      usleep(2);
+      usleep(MS);
 
       q.Push(MakeChunk(data));
-      usleep(2);
+      usleep(MS);
 
       ASSERT_EQ(data, trg.GetData());
     }
 
     TEST_F(TestUploader, CancelShouldStopUploader)
     {
-      const std::string data(100, '$');
+      const std::string data(CS, '$');
       FakeTarget trg;
-
       Queue q;
 
       Uploader ul(trg, q, data.size() * 2);
       ul.Start();
 
       q.Push(MakeChunk(data));
-      usleep(2);
+      usleep(MS);
 
       ul.Cancel();
 
       q.Push(MakeChunk(data));
-      usleep(2);
+      usleep(MS);
 
       ASSERT_EQ(data, trg.GetData());
+    }
+
+    TEST_F(TestUploader, WaitShouldWait)
+    {
+      const std::string data(CS, '$');
+      FakeSource src(data, MS, NL);
+      FakeTarget trg;
+      Queue q;
+
+      Downloader dl(src, q);
+      Uploader ul(trg, q, data.size() * NL);
+
+      dl.Start();
+      ul.Start();
+
+      ptime t1(CurrentTime());
+      ul.Wait();
+      ptime t2(CurrentTime());
+
+      ASSERT_GE(t2, t1 + millisec(MS * NL) );
+    }
+
+    TEST_F(TestUploader, WaitShouldReturnSuccessOnSuccess)
+    {
+      const std::string data(CS, '$');
+      FakeSource src(data, MS, NL);
+      FakeTarget trg;
+      Queue q;
+
+      Downloader dl(src, q);
+      Uploader ul(trg, q, data.size() * NL);
+
+      dl.Start();
+      ul.Start();
+
+      ASSERT_EQ(STATE_SUCCESS, ul.Wait());
+    }
+
+    TEST_F(TestUploader, WaitShouldReturnCancelledWhenCancelled)
+    {
+      const std::string data(CS, '$');
+      FakeSource src(data, MS, NL);
+      FakeTarget trg;
+      Queue q;
+
+      Downloader dl(src, q);
+      Uploader ul(trg, q, data.size() * NL);
+
+      dl.Start();
+      ul.Start();
+      ul.Cancel();
+
+      ASSERT_EQ(STATE_CANCELLED, ul.Wait());
+    }
+
+    TEST_F(TestUploader, WaitShouldReturnTimeoutOnTimeout)
+    {
+      const std::string data(CS, '$');
+      FakeSource src(data, MS, NL);
+      FakeTarget trg;
+      Queue q;
+
+      Downloader dl(src, q);
+      Uploader ul(trg, q, data.size() * NL);
+
+      dl.Start();
+      ul.Start();
+
+      ASSERT_EQ(STATE_TIMEOUT, ul.Wait(MS * NL / 2));
+    }
+
+    TEST_F(TestUploader, WaitShouldReturnErrorOnError)
+    {
+      const std::string data(CS, '$');
+      FakeSource src(data, MS, NL);
+      FakeTarget trg(true);
+      Queue q;
+
+      Downloader dl(src, q);
+      Uploader ul(trg, q, data.size() * NL);
+
+      dl.Start();
+      ul.Start();
+
+      ASSERT_EQ(STATE_ERROR, ul.Wait());
+    }
+
+    TEST_F(TestUploader, WaitShouldExitOnTimeout)
+    {
+      const std::string data(CS, '$');
+      FakeSource src(data, MS, NL);
+      FakeTarget trg(true);
+      Queue q;
+
+      Downloader dl(src, q);
+      Uploader ul(trg, q, data.size() * NL);
+
+      dl.Start();
+
+      ptime t1(CurrentTime());
+      ul.Start();
+      ul.Wait(MS * NL / 2);
+      ptime t2(CurrentTime());
+
+      ASSERT_LT(t2, t1 + millisec(MS * NL));
+    }
+
+    TEST_F(TestUploader, ErrorShouldReturnSourceError)
+    {
+      const std::string data(CS, '$');
+      FakeSource src(data, MS, NL);
+      FakeTarget trg(true);
+      Queue q;
+
+      Downloader dl(src, q);
+      Uploader ul(trg, q, data.size() * NL);
+
+      dl.Start();
+      ul.Start();
+      ul.Wait();
+
+      ASSERT_EQ("ERROR", ul.Error());
     }
   }
 }
