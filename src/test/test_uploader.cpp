@@ -1,4 +1,5 @@
 #include "../downloader.h"
+#include "../filetransfer.h"
 #include "../source.h"
 #include "../uploader.h"
 
@@ -10,36 +11,34 @@ namespace FileTransfer
   {
     using boost::posix_time::ptime;
     using boost::posix_time::millisec;
+
+    const size_t CS   = 100;
+    const unsigned MS = 2;
+    const unsigned NL = 10;
+
+    static ptime CurrentTime()
+    {
+      return boost::posix_time::microsec_clock::universal_time();
+    }
+
+    static void usleep(unsigned ms)
+    {
+      boost::this_thread::sleep_for(boost::chrono::milliseconds(ms));
+    }
+
+    class TestFileTransfer : public ::testing::Test
+    {
+    };
+
     class TestUploader : public ::testing::Test
     {
     protected:
-      TestUploader()
-        : CS(100)
-        , MS(2)
-        , NL(10)
-      {
-      }
-
       static Queue::Chunk MakeChunk(const std::string& str)
       {
         Queue::Chunk chunk(str.size());
         chunk.assign(str.data(), str.data() + str.size());
         return chunk;
       }
-
-      static void usleep(unsigned ms)
-      {
-        boost::this_thread::sleep_for(boost::chrono::milliseconds(ms));
-      }
-
-      static ptime CurrentTime()
-      {
-        return boost::posix_time::microsec_clock::universal_time();
-      }
-
-      const size_t CS;
-      const unsigned MS;
-      const unsigned NL;
     };
 
     class FakeSource : public Source
@@ -293,6 +292,94 @@ namespace FileTransfer
       ul.Wait();
 
       ASSERT_EQ("ERROR", ul.Error());
+    }
+
+    TEST_F(TestFileTransfer, StartShouldNotWait)
+    {
+      const std::string data(CS, '$');
+      FakeSource src(data, MS, NL);
+      FakeTarget trg(true);
+
+      ptime t1(CurrentTime());
+      FileTransfer ft(&src, &trg);
+      ft.Start();
+      ptime t2(CurrentTime());
+
+      ASSERT_LT(t2, t1 + millisec(MS * NL));
+    }
+
+    TEST_F(TestFileTransfer, WaitShouldWait)
+    {
+      const std::string data(CS, '$');
+      FakeSource src(data, MS, NL);
+      FakeTarget trg(true);
+
+      ptime t1(CurrentTime());
+      FileTransfer ft(&src, &trg);
+      ft.Start();
+      ft.Wait();
+      ptime t2(CurrentTime());
+
+      ASSERT_GT(t2, t1 + millisec(MS * NL));
+    }
+
+    TEST_F(TestFileTransfer, WaitShouldExitOnTimeout)
+    {
+      const std::string data(CS, '$');
+      FakeSource src(data, MS, NL);
+      FakeTarget trg(true);
+
+      ptime t1(CurrentTime());
+      FileTransfer ft(&src, &trg);
+      ft.Start();
+      ft.Wait(MS * NL / 2);
+      ptime t2(CurrentTime());
+
+      ASSERT_LT(t2, t1 + millisec(MS * NL));
+    }
+
+    TEST_F(TestFileTransfer, ExecShouldWait)
+    {
+      const std::string data(CS, '$');
+      FakeSource src(data, MS, NL);
+      FakeTarget trg(true);
+
+      ptime t1(CurrentTime());
+      FileTransfer ft(&src, &trg);
+      ft.Exec();
+      ptime t2(CurrentTime());
+
+      ASSERT_GT(t2, t1 + millisec(MS * NL));
+    }
+
+    TEST_F(TestFileTransfer, ExecShouldExitOnTimeout)
+    {
+      const std::string data(CS, '$');
+      FakeSource src(data, MS, NL);
+      FakeTarget trg(true);
+
+      ptime t1(CurrentTime());
+      FileTransfer ft(&src, &trg);
+      ft.Exec(MS * NL / 2);
+      ptime t2(CurrentTime());
+
+      ASSERT_LT(t2, t1 + millisec(MS * NL));
+    }
+
+    TEST_F(TestFileTransfer, CancelShouldCancel)
+    {
+      const std::string data(CS, '$');
+      FakeSource src(data, MS, NL);
+      FakeTarget trg(true);
+
+      ptime t1(CurrentTime());
+      FileTransfer ft(&src, &trg);
+      ft.Start();
+      usleep(MS * NL / 2);
+      ft.Cancel();
+      ptime t2(CurrentTime());
+
+      ASSERT_LT(t2, t1 + millisec(MS * NL));
     }
   }
 }

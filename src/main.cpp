@@ -1,3 +1,4 @@
+#include "curl.h"
 #include "filetransfer.h"
 
 #include <gtest/gtest.h>
@@ -36,7 +37,7 @@ int main(int argc, char* argv[])
     "https://root:qwe123QWE@10.27.11.125/folder/test1/nz_freedos_1-flat.vmdk?dcPath=ha%2ddatacenter&dsName=datastore1",
     "https://root:qwe123QWE@10.27.11.125/folder/test1/test.dat?dcPath=ha-datacenter&dsName=datastore1");
 
-  ft.Transfer();
+  ft.Exec();
 
   curl_global_cleanup();
 

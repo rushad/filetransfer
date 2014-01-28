@@ -1,6 +1,5 @@
 #pragma once
 
-#include "curl.h"
 #include "downloader.h"
 #include "queue.h"
 #include "uploader.h"
@@ -13,13 +12,16 @@ namespace FileTransfer
   {
   public:
     FileTransfer(const std::string& urlSrc, const std::string& urlTrg);
-    void Transfer(const unsigned timeout = UINT_MAX);
+    FileTransfer(Source* src, Target* trg);
+    void Start();
+    void Wait(const unsigned timeout = UINT_MAX);
+    void Exec(const unsigned timeout = UINT_MAX);
     void Cancel();
 
   private:
     Queue Q;
-    CurlSource Src;
-    CurlTarget Trg;
+    Source* Src;
+    Target* Trg;
     Downloader Dl;
     Uploader Ul;
   };
