@@ -1,7 +1,7 @@
-#include "../downloader.h"
+#include "test_common.h"
+#include "test_fakesource.h"
 
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/thread/thread.hpp>
+#include "../downloader.h"
 
 #include <gtest/gtest.h>
 
@@ -9,72 +9,8 @@ namespace FileTransfer
 {
   namespace Test
   {
-    using boost::posix_time::ptime;
-    using boost::posix_time::millisec;
     class TestDownloader : public ::testing::Test
     {
-    protected:
-      TestDownloader()
-        : CS(100)
-        , MS(2)
-        , NL(10)
-      {
-      }
-
-      static Queue::Chunk MakeChunk(const std::string& str)
-      {
-        Queue::Chunk chunk(str.size());
-        chunk.assign(str.data(), str.data() + str.size());
-        return chunk;
-      }
-
-      static void usleep(unsigned ms)
-      {
-        boost::this_thread::sleep_for(boost::chrono::milliseconds(ms));
-      }
-
-      static ptime CurrentTime()
-      {
-        return boost::posix_time::microsec_clock::universal_time();
-      }
-
-      const size_t CS;
-      const unsigned MS;
-      const unsigned NL;
-    };
-
-    class FakeSource : public Source
-    {
-    public:
-      FakeSource(const std::string& data, unsigned delay, unsigned nloops = 1, bool error = false)
-        : Data(data)
-        , Delay(delay)
-        , NLoops(nloops)
-        , Error(error)
-      {
-      }
-
-      virtual bool Run(Receiver& rv, std::string& strError)
-      {
-        for (unsigned i = 0; !rv.Cancelled() && (i < NLoops); ++i)
-        {
-          boost::this_thread::sleep_for(boost::chrono::milliseconds(Delay));
-          rv.Receive((void*)Data.data(), 1, Data.size());
-        }
-        strError = (Error ? "ERROR" : "OK");
-        return !Error;
-      }
-
-      virtual boost::uint64_t GetSize()
-      {
-        return Data.size() * NLoops;
-      }
-
-    private:
-      const std::string Data;
-      const unsigned Delay;
-      const unsigned NLoops;
-      const bool Error;
     };
 
     TEST_F(TestDownloader, DownloaderShouldStartThread)

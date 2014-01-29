@@ -201,6 +201,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\test\test_filetransfer.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\src\test\test_queue.cpp"
 				>
 			</File>
@@ -244,6 +248,18 @@
 			</File>
 			<File
 				RelativePath=".\src\target.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\test\test_common.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\test\test_fakesource.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\test\test_faketarget.h"
 				>
 			</File>
 			<File
