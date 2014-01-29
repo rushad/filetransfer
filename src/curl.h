@@ -3,9 +3,11 @@
 #include "receiver.h"
 #include "source.h"
 #include "target.h"
+#include "transmitter.h"
 
 #include <curl/curl.h>
 
+#include <boost/cstdint.hpp>
 #include <boost/noncopyable.hpp>
 
 #include <string>

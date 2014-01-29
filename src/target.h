@@ -2,6 +2,8 @@
 
 #include "transmitter.h"
 
+#include <boost/shared_ptr.hpp>
+
 #include <string>
 
 namespace FileTransfer

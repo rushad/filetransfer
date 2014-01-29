@@ -1,7 +1,5 @@
 #include "uploader.h"
 
-#include <pthread.h>
-
 namespace FileTransfer
 {
   Uploader::Uploader(Target& trg, Queue& q, const boost::uint64_t srcSize, Observer* obs)

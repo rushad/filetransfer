@@ -1,7 +1,5 @@
 #include "downloader.h"
 
-#include <pthread.h>
-
 namespace FileTransfer
 {
   Downloader::Downloader(Source& src, Queue& q, Observer* obs)

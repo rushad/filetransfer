@@ -11,7 +11,7 @@ namespace FileTransfer
   {
   }
 
-  FileTransfer::FileTransfer(Source::Ptr src, Target::Ptr trg, Observer* srcObs, Observer* trgObs)
+  FileTransfer::FileTransfer(const Source::Ptr& src, const Target::Ptr& trg, Observer* srcObs, Observer* trgObs)
     : Src(src)
     , Trg(trg)
     , Dl(*Src, Q, srcObs)

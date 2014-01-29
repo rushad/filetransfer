@@ -3,9 +3,10 @@
 #include "test_faketarget.h"
 
 #include "../filetransfer.h"
-#include "../source.h"
 
 #include <gtest/gtest.h>
+
+#include <string>
 
 namespace FileTransfer
 {

@@ -1,16 +1,16 @@
 #pragma once
 
-#include <boost/shared_array.hpp>
 #include <boost/thread/condition_variable.hpp>
+#include <boost/thread/lock_guard.hpp>
+#include <boost/thread/mutex.hpp>
 
 #include <queue>
-#include <memory>
 #include <vector>
 
 namespace FileTransfer
 {
   const size_t DefaultMaxQueueSize = 1024 * 1024 * 1024;
-  enum State { STATE_SUCCESS, STATE_CANCELLED, STATE_TIMEOUT, STATE_ERROR };
+  enum State { STATE_SUCCESS, STATE_CANCELLED, STATE_TIMEOUT, STATE_ERROR }; // ????
 
   class Queue
   {

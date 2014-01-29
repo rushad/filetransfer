@@ -1,7 +1,5 @@
 #include "curl.h"
 
-#include <iostream> // ****
-
 namespace FileTransfer
 {
   CurlSource::CurlSource(const std::string& url)

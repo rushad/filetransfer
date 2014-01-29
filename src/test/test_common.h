@@ -6,6 +6,8 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread/thread.hpp>
 
+#include <string>
+
 namespace FileTransfer
 {
   namespace Test
@@ -31,6 +33,13 @@ namespace FileTransfer
     {
       Queue::Chunk chunk(str.size());
       chunk.assign(str.data(), str.data() + str.size());
+      return chunk;
+    }
+
+    static Queue::Chunk MakeChunk(const Queue::Chunk& chunk1, const Queue::Chunk& chunk2)
+    {
+      Queue::Chunk chunk(chunk1);
+      chunk.insert(chunk.end(), chunk2.begin(), chunk2.end());
       return chunk;
     }
 

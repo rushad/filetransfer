@@ -5,6 +5,8 @@
 
 #include <gtest/gtest.h>
 
+#include <string>
+
 namespace FileTransfer
 {
   namespace Test

@@ -1,8 +1,14 @@
 #pragma once
 
+#include "test_common.h"
+
+#include "../receiver.h"
 #include "../source.h"
 
+#include <boost/cstdint.hpp>
 #include <boost/thread/thread.hpp>
+
+#include <string>
 
 namespace FileTransfer
 {
@@ -23,7 +29,7 @@ namespace FileTransfer
       {
         for (unsigned i = 0; !rv.Cancelled() && (i < NLoops); ++i)
         {
-          boost::this_thread::sleep_for(boost::chrono::milliseconds(Delay));
+          usleep(Delay);
           rv.Receive((void*)Data.data(), 1, Data.size());
         }
         strError = (Error ? "ERROR" : "OK");

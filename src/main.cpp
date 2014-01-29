@@ -1,4 +1,3 @@
-#include "curl.h"
 #include "filetransfer.h"
 #include "observer.h"
 

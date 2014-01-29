@@ -7,6 +7,12 @@
 
 #include <pthread.h>
 
+#include <boost/cstdint.hpp>
+#include <boost/thread/condition_variable.hpp>
+#include <boost/thread/mutex.hpp>
+
+#include <string>
+
 namespace FileTransfer
 {
   class Downloader : public Receiver
