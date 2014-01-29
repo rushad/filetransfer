@@ -235,6 +235,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\observer.h"
+				>
+			</File>
+			<File
 				RelativePath=".\src\queue.h"
 				>
 			</File>

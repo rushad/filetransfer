@@ -4,12 +4,14 @@
 
 namespace FileTransfer
 {
-  Uploader::Uploader(Target& trg, Queue& q, const boost::uint64_t length)
+  Uploader::Uploader(Target& trg, Queue& q, const boost::uint64_t srcSize, Observer* obs)
     : ThreadId(pthread_self())
     , Trg(trg)
     , Q(q)
-    , Length(length)
+    , Obs(obs)
+    , SrcSize(srcSize)
     , Uploaded(0)
+    , LastProgress(0)
     , Stop(false)
     , Result(false)
     , Done(false)
@@ -87,7 +89,7 @@ namespace FileTransfer
 
   size_t Uploader::Transmit(void *buffer, size_t size, size_t nmemb)
   {
-    if (Uploaded >= Length)
+    if (Uploaded >= SrcSize)
       return 0;
 
     Queue::Chunk chunk = Q.Pop(size * nmemb);
@@ -96,6 +98,16 @@ namespace FileTransfer
       memcpy(buffer, &chunk[0], chunk.size());
 
     Uploaded += chunk.size();
+
+    if (Obs)
+    {
+      unsigned progress = (unsigned)(((double)Uploaded / (double)SrcSize) * 100);
+      if (progress != LastProgress)
+      {
+        Obs->UpdateProgress(progress);
+        LastProgress = progress;
+      }
+    }
 
     return chunk.size();
   }

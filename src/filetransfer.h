@@ -11,17 +11,18 @@ namespace FileTransfer
   class FileTransfer
   {
   public:
-    FileTransfer(const std::string& urlSrc, const std::string& urlTrg);
-    FileTransfer(Source* src, Target* trg);
+    const static unsigned WAIT_INFINITE = UINT_MAX;
+    FileTransfer(const std::string& urlSrc, const std::string& urlTrg, Observer* srcObs = 0, Observer* trgObs = 0);
+    FileTransfer(Source::Ptr src, Target::Ptr trg, Observer* srcObs = 0, Observer* trgObs = 0);
     void Start();
-    void Wait(const unsigned timeout = UINT_MAX);
-    void Exec(const unsigned timeout = UINT_MAX);
+    void Wait(const unsigned timeout = WAIT_INFINITE);
+    void Exec(const unsigned timeout = WAIT_INFINITE);
     void Cancel();
 
   private:
     Queue Q;
-    Source* Src;
-    Target* Trg;
+    Source::Ptr Src;
+    Target::Ptr Trg;
     Downloader Dl;
     Uploader Ul;
   };

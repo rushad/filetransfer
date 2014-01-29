@@ -31,6 +31,8 @@ namespace FileTransfer
         return Data;
       }
 
+    typedef boost::shared_ptr<FakeTarget> Ptr;
+
     private:
       const bool Error;
       std::string Data;

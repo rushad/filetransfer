@@ -1,5 +1,6 @@
 #pragma once
 
+#include "observer.h"
 #include "queue.h"
 #include "transmitter.h"
 #include "target.h"
@@ -11,7 +12,7 @@ namespace FileTransfer
   class Uploader : public Transmitter
   {
   public:
-    Uploader(Target& trg, Queue& q, const boost::uint64_t length);
+    Uploader(Target& trg, Queue& q, const boost::uint64_t length, Observer* obs = 0);
     ~Uploader();
     void Start();
     void Cancel();
@@ -27,8 +28,10 @@ namespace FileTransfer
     pthread_t ThreadId;
     Target& Trg;
     Queue& Q;
-    const boost::uint64_t Length;
+    Observer* Obs;
+    const boost::uint64_t SrcSize;
     boost::uint64_t Uploaded;
+    unsigned LastProgress;
 
     mutable boost::mutex LockStop;
     bool Stop;

@@ -3,6 +3,7 @@
 #include "test_faketarget.h"
 
 #include "../filetransfer.h"
+#include "../source.h"
 
 #include <gtest/gtest.h>
 
@@ -16,90 +17,104 @@ namespace FileTransfer
 
     TEST_F(TestFileTransfer, StartShouldNotWait)
     {
-      const std::string data(CS, '$');
-      FakeSource src(data, MS, NL);
-      FakeTarget trg(true);
+      const std::string data(CHUNK_SIZE, '$');
+      Source::Ptr src(new FakeSource(data, CHUNK_DELAY, CHUNK_NUMBER));
+      Target::Ptr trg(new FakeTarget);
 
       ptime t1(CurrentTime());
-      FileTransfer ft(&src, &trg);
+      FileTransfer ft(src, trg);
       ft.Start();
       ptime t2(CurrentTime());
 
-      ASSERT_LT(t2, t1 + millisec(MS * NL));
+      ASSERT_LT(t2, t1 + millisec(CHUNK_DELAY * CHUNK_NUMBER));
     }
 
     TEST_F(TestFileTransfer, WaitShouldWait)
     {
-      const std::string data(CS, '$');
-      FakeSource src(data, MS, NL);
-      FakeTarget trg(true);
+      const std::string data(CHUNK_SIZE, '$');
+      Source::Ptr src(new FakeSource(data, CHUNK_DELAY, CHUNK_NUMBER));
+      Target::Ptr trg(new FakeTarget);
 
       ptime t1(CurrentTime());
-      FileTransfer ft(&src, &trg);
+      FileTransfer ft(src, trg);
       ft.Start();
       ft.Wait();
       ptime t2(CurrentTime());
 
-      ASSERT_GT(t2, t1 + millisec(MS * NL));
+      ASSERT_GT(t2, t1 + millisec(CHUNK_DELAY * CHUNK_NUMBER));
     }
 
     TEST_F(TestFileTransfer, WaitShouldExitOnTimeout)
     {
-      const std::string data(CS, '$');
-      FakeSource src(data, MS, NL);
-      FakeTarget trg(true);
+      const std::string data(CHUNK_SIZE, '$');
+      Source::Ptr src(new FakeSource(data, CHUNK_DELAY, CHUNK_NUMBER));
+      Target::Ptr trg(new FakeTarget);
 
       ptime t1(CurrentTime());
-      FileTransfer ft(&src, &trg);
+      FileTransfer ft(src, trg);
       ft.Start();
-      ft.Wait(MS * NL / 2);
+      ft.Wait(CHUNK_DELAY * CHUNK_NUMBER / 2);
       ptime t2(CurrentTime());
 
-      ASSERT_LT(t2, t1 + millisec(MS * NL));
+      ASSERT_LT(t2, t1 + millisec(CHUNK_DELAY * CHUNK_NUMBER));
     }
 
     TEST_F(TestFileTransfer, ExecShouldWait)
     {
-      const std::string data(CS, '$');
-      FakeSource src(data, MS, NL);
-      FakeTarget trg(true);
+      const std::string data(CHUNK_SIZE, '$');
+      Source::Ptr src(new FakeSource(data, CHUNK_DELAY, CHUNK_NUMBER));
+      Target::Ptr trg(new FakeTarget);
 
       ptime t1(CurrentTime());
-      FileTransfer ft(&src, &trg);
+      FileTransfer ft(src, trg);
       ft.Exec();
       ptime t2(CurrentTime());
 
-      ASSERT_GT(t2, t1 + millisec(MS * NL));
+      ASSERT_GT(t2, t1 + millisec(CHUNK_DELAY * CHUNK_NUMBER));
     }
 
     TEST_F(TestFileTransfer, ExecShouldExitOnTimeout)
     {
-      const std::string data(CS, '$');
-      FakeSource src(data, MS, NL);
-      FakeTarget trg(true);
+      const std::string data(CHUNK_SIZE, '$');
+      Source::Ptr src(new FakeSource(data, CHUNK_DELAY, CHUNK_NUMBER));
+      Target::Ptr trg(new FakeTarget);
 
       ptime t1(CurrentTime());
-      FileTransfer ft(&src, &trg);
-      ft.Exec(MS * NL / 2);
+      FileTransfer ft(src, trg);
+      ft.Exec(CHUNK_DELAY * CHUNK_NUMBER / 2);
       ptime t2(CurrentTime());
 
-      ASSERT_LT(t2, t1 + millisec(MS * NL));
+      ASSERT_LT(t2, t1 + millisec(CHUNK_DELAY * CHUNK_NUMBER));
     }
 
     TEST_F(TestFileTransfer, CancelShouldCancel)
     {
-      const std::string data(CS, '$');
-      FakeSource src(data, MS, NL);
-      FakeTarget trg(true);
+      const std::string data(CHUNK_SIZE, '$');
+      Source::Ptr src(new FakeSource(data, CHUNK_DELAY, CHUNK_NUMBER));
+      Target::Ptr trg(new FakeTarget);
 
       ptime t1(CurrentTime());
-      FileTransfer ft(&src, &trg);
+      FileTransfer ft(src, trg);
       ft.Start();
-      usleep(MS * NL / 2);
+      usleep(CHUNK_DELAY * CHUNK_NUMBER / 2);
       ft.Cancel();
       ptime t2(CurrentTime());
 
-      ASSERT_LT(t2, t1 + millisec(MS * NL));
+      ASSERT_LT(t2, t1 + millisec(CHUNK_DELAY * CHUNK_NUMBER));
+    }
+
+    TEST_F(TestFileTransfer, SecondWaitShouldContinueWaiting)
+    {
+      const std::string data(CHUNK_SIZE, '$');
+      Source::Ptr src(new FakeSource(data, CHUNK_DELAY, CHUNK_NUMBER));
+      FakeTarget::Ptr trg(new FakeTarget);
+
+      FileTransfer ft(src, trg);
+      ft.Start();
+      ft.Wait(CHUNK_DELAY * CHUNK_NUMBER / 2);
+      ft.Wait();
+
+      ASSERT_EQ(CHUNK_SIZE * CHUNK_NUMBER, trg.get()->GetData().size());
     }
   }
 }

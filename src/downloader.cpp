@@ -4,11 +4,14 @@
 
 namespace FileTransfer
 {
-  Downloader::Downloader(Source& src, Queue& q)
+  Downloader::Downloader(Source& src, Queue& q, Observer* obs)
     : ThreadId(pthread_self())
     , Src(src)
     , Q(q)
+    , Obs(obs)
+    , SrcSize(src.GetSize())
     , Downloaded(0)
+    , LastProgress(0)
     , Stop(false)
     , Result(false)
     , Done(false)
@@ -77,6 +80,11 @@ namespace FileTransfer
     return SrcError;
   }
 
+  boost::uint64_t Downloader::Size() const
+  {
+    return SrcSize;
+  }
+
   bool Downloader::Cancelled() const
   {
     boost::lock_guard<boost::mutex> lock(LockStop);
@@ -89,6 +97,16 @@ namespace FileTransfer
     chunk.assign((char*)buffer, (char*)buffer + chunk.size());
     Q.Push(chunk);
     Downloaded += chunk.size();
+
+    if (Obs)
+    {
+      unsigned progress = (unsigned)(((double)Downloaded / (double)SrcSize) * 100);
+      if (progress != LastProgress)
+      {
+        Obs->UpdateProgress(progress);
+        LastProgress = progress;
+      }
+    }
   }
 
   void* Downloader::ThreadFunc(void *data)

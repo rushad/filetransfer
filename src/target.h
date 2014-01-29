@@ -11,6 +11,7 @@ namespace FileTransfer
   public:
     virtual ~Target() {}
     virtual bool Run(Transmitter& tr, std::string& strError) = 0;
+    typedef boost::shared_ptr<Target> Ptr;
   };
 
 }

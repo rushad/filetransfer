@@ -18,7 +18,7 @@ namespace FileTransfer
 
     TEST_F(TestUploader, UploaderShouldStartThread)
     {
-      const std::string data(CS, '$');
+      const std::string data(CHUNK_SIZE, '$');
       FakeTarget trg;
       Queue q;
 
@@ -32,7 +32,7 @@ namespace FileTransfer
 
     TEST_F(TestUploader, UploaderShouldPopDataFromQueue)
     {
-      const std::string data(CS, '$');
+      const std::string data(CHUNK_SIZE, '$');
       FakeTarget trg;
       Queue q;
 
@@ -47,7 +47,7 @@ namespace FileTransfer
 
     TEST_F(TestUploader, UploaderShouldStopWhenDone)
     {
-      const std::string data(CS, '$');
+      const std::string data(CHUNK_SIZE, '$');
       FakeTarget trg;
       Queue q;
 
@@ -55,17 +55,17 @@ namespace FileTransfer
       ul.Start();
 
       q.Push(MakeChunk(data));
-      usleep(MS);
+      usleep(CHUNK_DELAY);
 
       q.Push(MakeChunk(data));
-      usleep(MS);
+      usleep(CHUNK_DELAY);
 
       ASSERT_EQ(data, trg.GetData());
     }
 
     TEST_F(TestUploader, CancelShouldStopUploader)
     {
-      const std::string data(CS, '$');
+      const std::string data(CHUNK_SIZE, '$');
       FakeTarget trg;
       Queue q;
 
@@ -73,25 +73,25 @@ namespace FileTransfer
       ul.Start();
 
       q.Push(MakeChunk(data));
-      usleep(MS);
+      usleep(CHUNK_DELAY);
 
       ul.Cancel();
 
       q.Push(MakeChunk(data));
-      usleep(MS);
+      usleep(CHUNK_DELAY);
 
       ASSERT_EQ(data, trg.GetData());
     }
 
     TEST_F(TestUploader, WaitShouldWait)
     {
-      const std::string data(CS, '$');
-      FakeSource src(data, MS, NL);
+      const std::string data(CHUNK_SIZE, '$');
+      FakeSource src(data, CHUNK_DELAY, CHUNK_NUMBER);
       FakeTarget trg;
       Queue q;
 
       Downloader dl(src, q);
-      Uploader ul(trg, q, data.size() * NL);
+      Uploader ul(trg, q, dl.Size());
 
       dl.Start();
       ul.Start();
@@ -100,18 +100,18 @@ namespace FileTransfer
       ul.Wait();
       ptime t2(CurrentTime());
 
-      ASSERT_GE(t2, t1 + millisec(MS * NL) );
+      ASSERT_GE(t2, t1 + millisec(CHUNK_DELAY * CHUNK_NUMBER) );
     }
 
     TEST_F(TestUploader, WaitShouldReturnSuccessOnSuccess)
     {
-      const std::string data(CS, '$');
-      FakeSource src(data, MS, NL);
+      const std::string data(CHUNK_SIZE, '$');
+      FakeSource src(data, CHUNK_DELAY, CHUNK_NUMBER);
       FakeTarget trg;
       Queue q;
 
       Downloader dl(src, q);
-      Uploader ul(trg, q, data.size() * NL);
+      Uploader ul(trg, q, dl.Size());
 
       dl.Start();
       ul.Start();
@@ -121,13 +121,13 @@ namespace FileTransfer
 
     TEST_F(TestUploader, WaitShouldReturnCancelledWhenCancelled)
     {
-      const std::string data(CS, '$');
-      FakeSource src(data, MS, NL);
+      const std::string data(CHUNK_SIZE, '$');
+      FakeSource src(data, CHUNK_DELAY, CHUNK_NUMBER);
       FakeTarget trg;
       Queue q;
 
       Downloader dl(src, q);
-      Uploader ul(trg, q, data.size() * NL);
+      Uploader ul(trg, q, dl.Size());
 
       dl.Start();
       ul.Start();
@@ -138,29 +138,29 @@ namespace FileTransfer
 
     TEST_F(TestUploader, WaitShouldReturnTimeoutOnTimeout)
     {
-      const std::string data(CS, '$');
-      FakeSource src(data, MS, NL);
+      const std::string data(CHUNK_SIZE, '$');
+      FakeSource src(data, CHUNK_DELAY, CHUNK_NUMBER);
       FakeTarget trg;
       Queue q;
 
       Downloader dl(src, q);
-      Uploader ul(trg, q, data.size() * NL);
+      Uploader ul(trg, q, dl.Size());
 
       dl.Start();
       ul.Start();
 
-      ASSERT_EQ(STATE_TIMEOUT, ul.Wait(MS * NL / 2));
+      ASSERT_EQ(STATE_TIMEOUT, ul.Wait(CHUNK_DELAY * CHUNK_NUMBER / 2));
     }
 
     TEST_F(TestUploader, WaitShouldReturnErrorOnError)
     {
-      const std::string data(CS, '$');
-      FakeSource src(data, MS, NL);
+      const std::string data(CHUNK_SIZE, '$');
+      FakeSource src(data, CHUNK_DELAY, CHUNK_NUMBER);
       FakeTarget trg(true);
       Queue q;
 
       Downloader dl(src, q);
-      Uploader ul(trg, q, data.size() * NL);
+      Uploader ul(trg, q, dl.Size());
 
       dl.Start();
       ul.Start();
@@ -170,39 +170,57 @@ namespace FileTransfer
 
     TEST_F(TestUploader, WaitShouldExitOnTimeout)
     {
-      const std::string data(CS, '$');
-      FakeSource src(data, MS, NL);
-      FakeTarget trg(true);
+      const std::string data(CHUNK_SIZE, '$');
+      FakeSource src(data, CHUNK_DELAY, CHUNK_NUMBER);
+      FakeTarget trg;
       Queue q;
 
       Downloader dl(src, q);
-      Uploader ul(trg, q, data.size() * NL);
+      Uploader ul(trg, q, dl.Size());
 
       dl.Start();
 
       ptime t1(CurrentTime());
       ul.Start();
-      ul.Wait(MS * NL / 2);
+      ul.Wait(CHUNK_DELAY * CHUNK_NUMBER / 2);
       ptime t2(CurrentTime());
 
-      ASSERT_LT(t2, t1 + millisec(MS * NL));
+      ASSERT_LT(t2, t1 + millisec(CHUNK_DELAY * CHUNK_NUMBER));
     }
 
-    TEST_F(TestUploader, ErrorShouldReturnSourceError)
+    TEST_F(TestUploader, ErrorShouldReturnTargetError)
     {
-      const std::string data(CS, '$');
-      FakeSource src(data, MS, NL);
+      const std::string data(CHUNK_SIZE, '$');
+      FakeSource src(data, CHUNK_DELAY, CHUNK_NUMBER);
       FakeTarget trg(true);
       Queue q;
 
       Downloader dl(src, q);
-      Uploader ul(trg, q, data.size() * NL);
+      Uploader ul(trg, q, dl.Size());
 
       dl.Start();
       ul.Start();
       ul.Wait();
 
       ASSERT_EQ("ERROR", ul.Error());
+    }
+
+    TEST_F(TestUploader, ObserverShouldGetProgress)
+    {
+      const std::string data(CHUNK_SIZE, '$');
+      FakeSource src(data, CHUNK_DELAY, 1);
+      FakeTarget trg;
+      FakeObserver obs;
+      Queue q;
+
+      Downloader dl(src, q);
+      Uploader ul(trg, q, dl.Size(), &obs);
+
+      dl.Start();
+      ul.Start();
+      ul.Wait();
+
+      ASSERT_EQ(100, obs.Progress);
     }
   }
 }

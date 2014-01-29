@@ -6,10 +6,34 @@
 
 #include <curl/curl.h>
 
+#include <boost/noncopyable.hpp>
+
 #include <string>
 
 namespace FileTransfer
 {
+  class CurlObj : private boost::noncopyable
+  {
+  public:
+    CurlObj()
+      : Obj(curl_easy_init())
+    {
+    }
+
+    ~CurlObj()
+    {
+      curl_easy_cleanup(Obj);
+    }
+
+    CURL* operator()() const
+    {
+      return Obj;
+    }
+
+  private:
+    CURL* Obj;
+  };
+
   class CurlSource : public Source
   {
   public:
@@ -21,8 +45,7 @@ namespace FileTransfer
     static size_t WriteFunc(void* buffer, size_t size, size_t nmemb, void* data);
     static size_t WriteFuncHEAD(void* buffer, size_t size, size_t nmemb, void* data);
 
-    std::string Url;
-    CURL* Curl;
+    const std::string Url;
   };
 
   class CurlTarget : public Target
@@ -34,8 +57,7 @@ namespace FileTransfer
   private:
     static size_t ReadFunc(void* buffer, size_t size, size_t nmemb, void* data);
 
-    std::string Url;
-    CURL* Curl;
+    const std::string Url;
   };
 
 }

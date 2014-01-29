@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../observer.h"
 #include "../queue.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -12,9 +13,9 @@ namespace FileTransfer
     using boost::posix_time::ptime;
     using boost::posix_time::millisec;
 
-    const size_t CS   = 100;
-    const unsigned MS = 2;
-    const unsigned NL = 10;
+    const size_t CHUNK_SIZE     = 100;
+    const unsigned CHUNK_DELAY  = 2;
+    const unsigned CHUNK_NUMBER = 10;
 
     static ptime CurrentTime()
     {
@@ -32,5 +33,16 @@ namespace FileTransfer
       chunk.assign(str.data(), str.data() + str.size());
       return chunk;
     }
+
+    class FakeObserver : public Observer
+    {
+    public:
+      virtual void UpdateProgress(const unsigned progress)
+      {
+        Progress = progress;
+      }
+
+      unsigned Progress;
+    };
   }
 }

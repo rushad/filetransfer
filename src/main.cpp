@@ -1,5 +1,6 @@
 #include "curl.h"
 #include "filetransfer.h"
+#include "observer.h"
 
 #include <gtest/gtest.h>
 
@@ -22,6 +23,24 @@ bool CheckOptions(int argc, char** argv)
   return true;
 }
 
+class SrcObserver : public FileTransfer::Observer
+{
+public:
+  virtual void UpdateProgress(const unsigned progress)
+  {
+    std::cout << "< " << progress << std::endl;
+  }
+};
+
+class TrgObserver : public FileTransfer::Observer
+{
+public:
+  virtual void UpdateProgress(const unsigned progress)
+  {
+    std::cout << "> " << progress << std::endl;
+  }
+};
+
 int main(int argc, char* argv[])
 {
   setlocale(LC_ALL, "RUS");
@@ -31,15 +50,14 @@ int main(int argc, char* argv[])
     return -1;
   }
 
-  curl_global_init(CURL_GLOBAL_ALL);
-
+  SrcObserver srcObs;
+  TrgObserver trgObs;
   FileTransfer::FileTransfer ft(
     "https://root:qwe123QWE@10.27.11.125/folder/test1/nz_freedos_1-flat.vmdk?dcPath=ha%2ddatacenter&dsName=datastore1",
-    "https://root:qwe123QWE@10.27.11.125/folder/test1/test.dat?dcPath=ha-datacenter&dsName=datastore1");
+    "https://root:qwe123QWE@10.27.11.125/folder/test1/test.dat?dcPath=ha-datacenter&dsName=datastore1",
+    &srcObs, &trgObs);
 
   ft.Exec();
-
-  curl_global_cleanup();
 
   return 0;
 }
