@@ -9,10 +9,12 @@
 #include <pthread.h>
 
 #include <boost/cstdint.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include <string>
+#include <vector>
 
 namespace FileTransfer
 {
@@ -29,6 +31,9 @@ namespace FileTransfer
 
     virtual bool Cancelled() const;
     virtual size_t Transmit(void *buffer, size_t size, size_t nmemb);
+
+    typedef boost::shared_ptr<Uploader> Ptr;
+    typedef std::vector<Ptr> Vector;
 
   private:
     static void* ThreadFunc(void *data);

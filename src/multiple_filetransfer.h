@@ -11,14 +11,16 @@
 #include "uploader.h"
 
 #include <string>
+#include <vector>
 
 namespace FileTransfer
 {
-  class SingleFileTransfer : public FileTransfer, public ProgressCalculator
+  class MultipleFileTransfer : public FileTransfer, public ProgressCalculator
   {
   public:
-    SingleFileTransfer(const std::string& urlSrc, const std::string& urlTrg, Observer* = 0);
-    SingleFileTransfer(const Source::Ptr src, const Target::Ptr trg, Observer* = 0);
+    typedef std::vector<std::string> UrlVector;
+    MultipleFileTransfer(const UrlVector urlSrc, const UrlVector urlTrg, Observer* = 0);
+    MultipleFileTransfer(const Source::Vector src, const Target::Vector trg, Observer* = 0);
     virtual void Start();
     virtual void Wait(const unsigned timeout);
     virtual void Cancel();
@@ -27,14 +29,15 @@ namespace FileTransfer
     void Wait();
 
   private:
-    Queue Q;
-    Source::Ptr Src;
-    Target::Ptr Trg;
+    Queue::Vector Queues;
+    Source::Vector Sources;
+    Target::Vector Targets;
     BytesObserver::Ptr DlObs;
     BytesObserver::Ptr UlObs;
-    Downloader Dl;
-    Uploader Ul;
+    Downloader::Vector Downloaders;
+    Uploader::Vector Uploaders;
     Observer* Obs;
+    boost::uint64_t TotalSize;
     unsigned LastDlProgress;
     unsigned LastUlProgress;
   };

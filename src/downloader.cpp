@@ -6,7 +6,6 @@ namespace FileTransfer
     : ThreadId(pthread_self())
     , Src(src)
     , Q(q)
-    , Obs(0)
     , SrcSize(src.GetSize())
     , Stop(false)
     , Result(false)
@@ -98,7 +97,7 @@ namespace FileTransfer
     chunk.assign((char*)buffer, (char*)buffer + chunk.size());
     Q.Push(chunk);
 
-    if (Obs)
+    if (Obs.get())
     {
       Obs->UpdateProgress(chunk.size());
     }

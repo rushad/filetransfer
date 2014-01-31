@@ -7,6 +7,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 
+#include <vector>
+
 namespace FileTransfer
 {
   class BytesObserver
@@ -17,8 +19,7 @@ namespace FileTransfer
     void UpdateProgress(const size_t bytes);
     boost::uint64_t GetBytes() const;
 
-//    typedef boost::shared_ptr<BytesObserver> Ptr;
-    typedef BytesObserver* Ptr;
+    typedef boost::shared_ptr<BytesObserver> Ptr;
 
   private:
     ProgressCalculator& ProgressCalculatorObj;

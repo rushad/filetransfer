@@ -16,6 +16,19 @@ namespace FileTransfer
     {
     };
 
+    TEST_F(TestSingleFileTransfer, ShouldTransferData)
+    {
+      const std::string data(CHUNK_SIZE, '$');
+      Source::Ptr src(new FakeSource(data, CHUNK_DELAY, CHUNK_NUMBER));
+      Target::Ptr trg(new FakeTarget);
+
+      SingleFileTransfer ft(src, trg);
+      ft.Start();
+      ft.Wait();
+
+      ASSERT_EQ(CHUNK_SIZE * CHUNK_NUMBER, (static_cast<FakeTarget*>(trg.get()))->Data.size());
+    }
+
     TEST_F(TestSingleFileTransfer, StartShouldNotWait)
     {
       const std::string data(CHUNK_SIZE, '$');
@@ -91,7 +104,7 @@ namespace FileTransfer
     TEST_F(TestSingleFileTransfer, CancelShouldCancel)
     {
       const std::string data(CHUNK_SIZE, '$');
-      Source::Ptr src(new FakeSource(data, CHUNK_DELAY, CHUNK_NUMBER));
+      Source::Ptr src(new FakeSource(data, CHUNK_DELAY, CHUNK_NUMBER*1000000));
       Target::Ptr trg(new FakeTarget);
 
       ptime t1(CurrentTime());
@@ -99,7 +112,6 @@ namespace FileTransfer
       ft.Start();
       usleep(CHUNK_DELAY * CHUNK_NUMBER / 2);
       ft.Cancel();
-      ft.Wait();
       ptime t2(CurrentTime());
 
       ASSERT_LT(t2, t1 + millisec(CHUNK_DELAY * CHUNK_NUMBER));

@@ -193,6 +193,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\multiple_filetransfer.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\src\queue.cpp"
 				>
 			</File>
@@ -248,6 +252,10 @@
 			</File>
 			<File
 				RelativePath=".\src\filetransfer.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\multiple_filetransfer.h"
 				>
 			</File>
 			<File

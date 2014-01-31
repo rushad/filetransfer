@@ -14,7 +14,7 @@ namespace FileTransfer
   {
   }
 
-  SingleFileTransfer::SingleFileTransfer(const Source::Ptr& src, const Target::Ptr& trg, Observer* obs)
+  SingleFileTransfer::SingleFileTransfer(const Source::Ptr src, const Target::Ptr trg, Observer* obs)
     : Src(src)
     , Trg(trg)
     , Dl(*Src, Q)

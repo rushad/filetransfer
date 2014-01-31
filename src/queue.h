@@ -24,6 +24,9 @@ namespace FileTransfer
     void Push(const Chunk& buffer);
     Chunk Pop(const size_t size);
 
+    typedef boost::shared_ptr<Queue> Ptr;
+    typedef std::vector<Ptr> Vector;
+
   private:
     typedef boost::lock_guard<boost::mutex> Lock;
     typedef boost::unique_lock<boost::mutex> CondLock;
