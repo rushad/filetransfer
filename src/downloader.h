@@ -1,9 +1,10 @@
 #pragma once
 
-#include "observer.h"
+#include "bytes_observer.h"
 #include "queue.h"
 #include "receiver.h"
 #include "source.h"
+#include "transfer.h"
 
 #include <pthread.h>
 
@@ -18,11 +19,12 @@ namespace FileTransfer
   class Downloader : public Receiver
   {
   public:
-    Downloader(Source& src, Queue& q, Observer* obs = 0);
+    Downloader(Source& src, Queue& q);
     ~Downloader();
+    void SetObserver(BytesObserver::Ptr obs);
     void Start();
     void Cancel();
-    State Wait(const unsigned ms = UINT_MAX);
+    TransferState Wait(const unsigned ms = UINT_MAX);
     std::string Error() const;
     boost::uint64_t Size() const;
 
@@ -35,10 +37,8 @@ namespace FileTransfer
     pthread_t ThreadId;
     Source& Src;
     Queue& Q;
-    Observer* Obs;
+    BytesObserver::Ptr Obs;
     boost::uint64_t SrcSize;
-    boost::uint64_t Downloaded;
-    unsigned LastProgress;
 
     mutable boost::mutex LockStop;
     bool Stop;

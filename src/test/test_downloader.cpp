@@ -176,17 +176,19 @@ namespace FileTransfer
 
     TEST_F(TestDownloader, ObserverShouldGetProgress)
     {
-      const std::string data(CHUNK_SIZE, '$');
+      const std::string data(CHUNK_SIZE+1, '$');
       FakeSource src(data, CHUNK_DELAY, 1);
-      FakeObserver obs;
+      FakeProgressCalculator calc;
+      BytesObserver::Ptr obs(new BytesObserver(calc));
       Queue q;
 
-      Downloader dl(src, q, &obs);
+      Downloader dl(src, q);
+      dl.SetObserver(obs);
 
       dl.Start();
       dl.Wait();
 
-      ASSERT_EQ(100, obs.Progress);
+      ASSERT_EQ(data.size(), obs->GetBytes());
     }
   }
 }

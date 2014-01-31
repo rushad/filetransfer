@@ -10,7 +10,6 @@
 namespace FileTransfer
 {
   const size_t DefaultMaxQueueSize = 1024 * 1024 * 1024;
-  enum State { STATE_SUCCESS, STATE_CANCELLED, STATE_TIMEOUT, STATE_ERROR }; // ????
 
   class Queue
   {

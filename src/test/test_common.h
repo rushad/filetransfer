@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../observer.h"
+#include "../progress_calculator.h"
 #include "../queue.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -46,12 +47,33 @@ namespace FileTransfer
     class FakeObserver : public Observer
     {
     public:
-      virtual void UpdateProgress(const unsigned progress)
+      virtual void UpdateProgress(const unsigned dlPerc, const unsigned ulPerc)
       {
-        Progress = progress;
+        DlProgress = dlPerc;
+        UlProgress = ulPerc;
       }
 
-      unsigned Progress;
+      unsigned DlProgress;
+      unsigned UlProgress;
+
+      typedef boost::shared_ptr<FakeObserver> Ptr;
+    };
+
+    class FakeProgressCalculator : public ProgressCalculator
+    {
+    public:
+      FakeProgressCalculator()
+        : Calls(0)
+      {
+      }
+
+      virtual void Calculate()
+      {
+        ++Calls;
+      }
+
+    public:
+      unsigned Calls;
     };
   }
 }

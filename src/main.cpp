@@ -1,5 +1,5 @@
-#include "filetransfer.h"
 #include "observer.h"
+#include "single_filetransfer.h"
 
 #include <gtest/gtest.h>
 
@@ -22,21 +22,12 @@ bool CheckOptions(int argc, char** argv)
   return true;
 }
 
-class SrcObserver : public FileTransfer::Observer
+class MyObserver : public FileTransfer::Observer
 {
 public:
-  virtual void UpdateProgress(const unsigned progress)
+  virtual void UpdateProgress(const unsigned dlPerc, const unsigned ulPerc)
   {
-    std::cout << "< " << progress << std::endl;
-  }
-};
-
-class TrgObserver : public FileTransfer::Observer
-{
-public:
-  virtual void UpdateProgress(const unsigned progress)
-  {
-    std::cout << "> " << progress << std::endl;
+    std::cout << dlPerc << " : " << ulPerc << std::endl;
   }
 };
 
@@ -49,14 +40,14 @@ int main(int argc, char* argv[])
     return -1;
   }
 
-  SrcObserver srcObs;
-  TrgObserver trgObs;
-  FileTransfer::FileTransfer ft(
+  MyObserver obs;
+  FileTransfer::SingleFileTransfer ft(
     "https://root:qwe123QWE@10.27.11.125/folder/test1/nz_freedos_1-flat.vmdk?dcPath=ha%2ddatacenter&dsName=datastore1",
     "https://root:qwe123QWE@10.27.11.125/folder/test1/test.dat?dcPath=ha-datacenter&dsName=datastore1",
-    &srcObs, &trgObs);
+    &obs);
 
-  ft.Exec();
+  ft.Start();
+  ft.Wait();
 
   return 0;
 }

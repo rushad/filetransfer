@@ -1,9 +1,10 @@
 #pragma once
 
-#include "observer.h"
+#include "bytes_observer.h"
 #include "queue.h"
-#include "transmitter.h"
 #include "target.h"
+#include "transfer.h"
+#include "transmitter.h"
 
 #include <pthread.h>
 
@@ -18,11 +19,12 @@ namespace FileTransfer
   class Uploader : public Transmitter
   {
   public:
-    Uploader(Target& trg, Queue& q, const boost::uint64_t length, Observer* obs = 0);
+    Uploader(Target& trg, Queue& q, const boost::uint64_t length);
     ~Uploader();
+    void SetObserver(BytesObserver::Ptr obs);
     void Start();
     void Cancel();
-    State Wait(const unsigned ms = UINT_MAX);
+    TransferState Wait(const unsigned ms = UINT_MAX);
     std::string Error() const;
 
     virtual bool Cancelled() const;
@@ -34,11 +36,10 @@ namespace FileTransfer
     pthread_t ThreadId;
     Target& Trg;
     Queue& Q;
-    Observer* Obs;
+    BytesObserver::Ptr Obs;
     const boost::uint64_t SrcSize;
     boost::uint64_t Uploaded;
-    unsigned LastProgress;
-
+ 
     mutable boost::mutex LockStop;
     bool Stop;
 

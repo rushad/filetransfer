@@ -31,17 +31,10 @@ namespace FileTransfer
         return !Error;
       }
 
-      std::string GetData() const
-      {
-        return Data;
-      }
-
-    typedef boost::shared_ptr<FakeTarget> Ptr;
-
-    private:
       const bool Error;
       std::string Data;
-    };
 
+      typedef boost::shared_ptr<FakeTarget> Ptr;
+    };
   }
 }

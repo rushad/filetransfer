@@ -29,7 +29,7 @@ namespace FileTransfer
       Uploader ul(trg, q, data.size());
       ul.Start();
 
-      ASSERT_LT(trg.GetData().size(), data.size());
+      ASSERT_LT(trg.Data.size(), data.size());
     }
 
     TEST_F(TestUploader, UploaderShouldPopDataFromQueue)
@@ -44,7 +44,7 @@ namespace FileTransfer
       ul.Start();
       ul.Wait();
 
-      ASSERT_EQ(data, trg.GetData());
+      ASSERT_EQ(data, trg.Data);
     }
 
     TEST_F(TestUploader, UploaderShouldStopWhenDone)
@@ -62,7 +62,7 @@ namespace FileTransfer
       q.Push(MakeChunk(data));
       usleep(CHUNK_DELAY);
 
-      ASSERT_EQ(data, trg.GetData());
+      ASSERT_EQ(data, trg.Data);
     }
 
     TEST_F(TestUploader, CancelShouldStopUploader)
@@ -82,7 +82,7 @@ namespace FileTransfer
       q.Push(MakeChunk(data));
       usleep(CHUNK_DELAY);
 
-      ASSERT_EQ(data, trg.GetData());
+      ASSERT_EQ(data, trg.Data);
     }
 
     TEST_F(TestUploader, WaitShouldWait)
@@ -209,20 +209,22 @@ namespace FileTransfer
 
     TEST_F(TestUploader, ObserverShouldGetProgress)
     {
-      const std::string data(CHUNK_SIZE, '$');
+      const std::string data(CHUNK_SIZE+1, '$');
       FakeSource src(data, CHUNK_DELAY, 1);
       FakeTarget trg;
-      FakeObserver obs;
+      FakeProgressCalculator calc;
+      BytesObserver::Ptr obs(new BytesObserver(calc));
       Queue q;
 
       Downloader dl(src, q);
-      Uploader ul(trg, q, dl.Size(), &obs);
+      Uploader ul(trg, q, dl.Size());
+      ul.SetObserver(obs);
 
       dl.Start();
       ul.Start();
       ul.Wait();
 
-      ASSERT_EQ(100, obs.Progress);
+      ASSERT_EQ(trg.Data.size(), obs->GetBytes());
     }
   }
 }

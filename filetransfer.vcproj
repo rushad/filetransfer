@@ -177,15 +177,15 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\src\bytes_observer.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\src\curl.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\src\downloader.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\filetransfer.cpp"
 				>
 			</File>
 			<File
@@ -197,15 +197,27 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\single_filetransfer.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\test\test_bytes_observer.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\src\test\test_downloader.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\src\test\test_filetransfer.cpp"
+				RelativePath=".\src\test\test_multiple_filetransfer.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\src\test\test_queue.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\test\test_single_filetransfer.cpp"
 				>
 			</File>
 			<File
@@ -223,6 +235,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\src\bytes_observer.h"
+				>
+			</File>
+			<File
 				RelativePath=".\src\curl.h"
 				>
 			</File>
@@ -239,11 +255,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\progress_calculator.h"
+				>
+			</File>
+			<File
 				RelativePath=".\src\queue.h"
 				>
 			</File>
 			<File
 				RelativePath=".\src\receiver.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\single_filetransfer.h"
 				>
 			</File>
 			<File
@@ -264,6 +288,10 @@
 			</File>
 			<File
 				RelativePath=".\src\test\test_faketarget.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\transfer.h"
 				>
 			</File>
 			<File
