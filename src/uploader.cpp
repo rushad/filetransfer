@@ -3,8 +3,7 @@
 namespace FileTransfer
 {
   Uploader::Uploader(Target& trg, Queue& q, const boost::uint64_t srcSize)
-    : ThreadId(pthread_self())
-    , Trg(trg)
+    : Trg(trg)
     , Q(q)
     , SrcSize(srcSize)
     , Uploaded(0)
@@ -14,12 +13,6 @@ namespace FileTransfer
   {
   }
 
-  Uploader::~Uploader()
-  {
-    if (!pthread_equal(ThreadId, pthread_self()))
-      pthread_join(ThreadId, 0);
-  }
-
   void Uploader::SetObserver(BytesObserver::Ptr obs)
   {
     Obs = obs;
@@ -27,20 +20,7 @@ namespace FileTransfer
 
   void Uploader::Start()
   {
-    int r = pthread_create(&ThreadId, 0, ThreadFunc, this);
-    switch(r)
-    {
-    case 0:
-      break;
-    case EAGAIN:
-      throw std::exception("Uploader::Start(): EAGAIN: Insufficient resources to create thread");
-    case EINVAL:
-      throw std::exception("Uploader::Start(): EINVAL: Invalid settings in attr");
-    case EPERM:
-      throw std::exception("Uploader::Start(): EINVAL: No permission to set the scheduling policy and parameters");
-    default:
-      throw std::exception("Uploader::Start(): Unknown error");
-    }
+    ThreadObj = std::auto_ptr<Thread>(new Thread(ThreadFunc, this));
   }
 
   void Uploader::Cancel()

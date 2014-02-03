@@ -4,9 +4,8 @@
 #include "queue.h"
 #include "receiver.h"
 #include "source.h"
+#include "thread.h"
 #include "transfer.h"
-
-#include <pthread.h>
 
 #include <boost/cstdint.hpp>
 #include <boost/shared_ptr.hpp>
@@ -22,7 +21,6 @@ namespace FileTransfer
   {
   public:
     Downloader(Source& src, Queue& q);
-    ~Downloader();
     void SetObserver(BytesObserver::Ptr obs);
     void Start();
     void Cancel();
@@ -38,8 +36,8 @@ namespace FileTransfer
 
   private:
     static void* ThreadFunc(void *data);
+    std::auto_ptr<Thread> ThreadObj;
 
-    pthread_t ThreadId;
     Source& Src;
     Queue& Q;
     BytesObserver::Ptr Obs;

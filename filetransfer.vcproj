@@ -299,6 +299,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\thread.h"
+				>
+			</File>
+			<File
 				RelativePath=".\src\transfer.h"
 				>
 			</File>

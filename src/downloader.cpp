@@ -3,20 +3,13 @@
 namespace FileTransfer
 {
   Downloader::Downloader(Source& src, Queue& q)
-    : ThreadId(pthread_self())
-    , Src(src)
+    : Src(src)
     , Q(q)
     , SrcSize(src.GetSize())
     , Stop(false)
     , Result(false)
     , Done(false)
   {
-  }
-
-  Downloader::~Downloader()
-  {
-    if (!pthread_equal(ThreadId, pthread_self()))
-      pthread_join(ThreadId, 0);
   }
 
   void Downloader::SetObserver(BytesObserver::Ptr obs)
@@ -26,20 +19,7 @@ namespace FileTransfer
 
   void Downloader::Start()
   {
-    int r = pthread_create(&ThreadId, 0, ThreadFunc, this);
-    switch(r)
-    {
-    case 0:
-      break;
-    case EAGAIN:
-      throw std::exception("Downloader::Start(): EAGAIN: Insufficient resources to create thread");
-    case EINVAL:
-      throw std::exception("Downloader::Start(): EINVAL: Invalid settings in attr");
-    case EPERM:
-      throw std::exception("Downloader::Start(): EINVAL: No permission to set the scheduling policy and parameters");
-    default:
-      throw std::exception("Downloader::Start(): Unknown error");
-    }
+    ThreadObj = std::auto_ptr<Thread>(new Thread(ThreadFunc, this));
   }
 
   void Downloader::Cancel()

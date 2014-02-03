@@ -3,6 +3,7 @@
 #include "bytes_observer.h"
 #include "queue.h"
 #include "target.h"
+#include "thread.h"
 #include "transfer.h"
 #include "transmitter.h"
 
@@ -22,7 +23,6 @@ namespace FileTransfer
   {
   public:
     Uploader(Target& trg, Queue& q, const boost::uint64_t length);
-    ~Uploader();
     void SetObserver(BytesObserver::Ptr obs);
     void Start();
     void Cancel();
@@ -37,8 +37,8 @@ namespace FileTransfer
 
   private:
     static void* ThreadFunc(void *data);
+    std::auto_ptr<Thread> ThreadObj;
 
-    pthread_t ThreadId;
     Target& Trg;
     Queue& Q;
     BytesObserver::Ptr Obs;
