@@ -9,7 +9,7 @@
 
 namespace FileTransfer
 {
-  const size_t DefaultMaxQueueSize = 1024 * 1024 * 1024;
+  const size_t DefaultMaxQueueSize = 1024 * 1024;
 
   class Queue
   {
